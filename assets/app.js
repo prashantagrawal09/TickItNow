@@ -47,11 +47,11 @@ function fmtDateTime(iso){
 // shows.html – populate static gallery
 function bootShows(){
   const shows = [
-    {id:1,title:"The Quantum Heist",genre:"Action",rating:"PG13",poster:"https://picsum.photos/300/450?1"},
-    {id:2,title:"Velvet Curtain",genre:"Drama",rating:"PG",poster:"https://picsum.photos/300/450?2"},
-    {id:3,title:"Neon Skies",genre:"Sci‑Fi",rating:"NC16",poster:"https://picsum.photos/300/450?3"},
-    {id:4,title:"Moonlit Sonata",genre:"Musical",rating:"PG",poster:"https://picsum.photos/300/450?4"},
-    {id:5,title:"The Last Encore",genre:"Theatre",rating:"G",poster:"https://picsum.photos/300/450?5"}
+    {id:1,title:"Fight Club",genre:"Action",rating:"G",poster:"assets/posters/Fight Club.jpeg"},
+    {id:2,title:"The Wolf of Wall Street",genre:"Drama",rating:"PG",poster:"assets/posters/The Wolf of Wall Street.jpeg"},
+    {id:3,title:"Interstellar",genre:"Sci‑Fi",rating:"NC16",poster:"assets/posters/Interstellar.jpeg"},
+    {id:4,title:"Spiderman",genre:"Action",rating:"PG",poster:"assets/posters/Spiderman.jpeg"},
+    {id:5,title:"Hacksaw Ridge",genre:"Action",rating:"PG",poster:"assets/posters/Hacksaw Ridge.jpeg"}
   ];
   const grid = qsel("#shows-grid");
   if (!grid) return;
@@ -75,7 +75,7 @@ function bootShowDetails(){
   const params = new URLSearchParams(location.search);
   const id = Number(params.get("id") || 1);
   const titleMap = {
-    1:"The Quantum Heist",2:"Velvet Curtain",3:"Neon Skies",4:"Moonlit Sonata",5:"The Last Encore"
+    1:"Fight Club",2:"The Wolf of Wall Street",3:"Interstellar",4:"Spiderman",5:"Hacksaw Ridge"
   };
   const venues = ["Orchard Cineplex A","Marina Theatre Hall 2","Jewel Cinema 5","Tampines Stage 1"];
   const fakeShowtimes = [0,1,2,3,4].map(i=>{
@@ -218,10 +218,10 @@ function bootConfirm(){
 /* ===== Featured Movies Carousel (no libs) ===== */
 (function(){
   const data = [
-    { id:1, title:"The Quantum Heist", blurb:"A crew of misfits cracks time to pull the ultimate job.", img:"https://picsum.photos/1200/600?random=11" },
-    { id:2, title:"Velvet Curtain",   blurb:"A backstage drama where the show must go on.",            img:"https://picsum.photos/1200/600?random=12" },
-    { id:3, title:"Neon Skies",       blurb:"Love and rebellion under a city of endless lights.",      img:"https://picsum.photos/1200/600?random=13" },
-    { id:4, title:"Moonlit Sonata",   blurb:"Music finds its way on a moonlit stage.",                img:"https://picsum.photos/1200/600?random=14" }
+    { id:1, title:"Fight Club", blurb:"An underground fight club becomes something far darker.", img:"assets/posters/Fight Club.jpeg" },
+    { id:2, title:"The Wolf of Wall Street",   blurb:"Greed, excess, and chaos on Wall Street.",            img:"assets/posters/The Wolf of Wall Street 2.jpeg" },
+    { id:3, title:"Interstellar",       blurb:"A journey through space to save humanity.",      img:"assets/posters/Interstellar.jpeg" },
+    { id:4, title:"Spiderman",   blurb:"An ordinary teen discovers extraordinary power.",                img:"assets/posters/Spiderman.jpeg" }
   ];
 
   const track = document.getElementById('carousel-track');
