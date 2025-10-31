@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create Account • TickItNow</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<header class="header">
+  <nav class="nav container">
+    <div class="logo"><span aria-hidden="true">🎟️</span><span class="brand">TickItNow</span></div>
+  </nav>
+</header>
+
+<main class="container" style="max-width:480px;padding-top:60px">
+  <div class="card">
+    <div class="card-body">
+      <h2>Create Account</h2>
+      <form action="register_submit.php" method="post" novalidate>
+        <label class="meta" for="full_name">Full Name *</label>
+        <input id="full_name" name="full_name" required placeholder="Your full name">
+
+        <label class="meta" for="email">Email *</label>
+        <input id="email" name="email" type="email" required placeholder="you@example.com">
+
+        <label class="meta" for="password">Password *</label>
+        <input id="password" name="password" type="password" minlength="6" required placeholder="••••••••">
+
+        <div class="flex" style="margin-top:18px;justify-content:space-between">
+          <button class="btn primary" type="submit">Create Account</button>
+          <a href="login.html" class="btn ghost">Already have an account?</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p class="copyright">© 2025 TickItNow. All rights reserved.</p>
+  </div>
+</footer>
+</body>
+</html>

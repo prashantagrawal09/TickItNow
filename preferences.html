@@ -1,0 +1,50 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TickItNow • My Preferences</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body onload="renderPreferences()">
+<header class="header">
+  <nav class="nav container">
+    <div class="logo"><span aria-hidden="true">🎟️</span><span>TickItNow</span></div>
+    <div class="links">
+      <a href="index.html">Home</a>
+      <a href="shows.html">Browse Shows</a>
+      <a class="active" href="preferences.html">My Preferences</a>
+      <a href="account.html" title="My Account">👤</a>
+    </div>
+    <a class="btn danger" href="#" onclick="PREFS.clear(); renderPreferences(); return false;">Clear All</a>
+  </nav>
+</header>
+
+<main class="container">
+  <h2>Ranked Preferences</h2>
+  <table class="table">
+    <thead><tr><th>#</th><th>Show</th><th>Start</th><th>Tickets</th><th>Price</th><th class="right">Actions</th></tr></thead>
+    <tbody id="prefs-body"></tbody>
+  </table>
+
+  <div class="flex" style="margin-top:14px">
+    <a class="btn" href="shows.html">Add More</a>
+    <a class="btn primary right" href="available.html">Review Availability</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-links">
+      <a href="#">Terms &amp; Conditions</a>
+      <a href="#">Privacy Policy</a>
+      <a href="contact.html">Contact Us</a>
+      <a href="#">FAQs</a>
+    </div>
+    <p class="copyright">© 2025 TickItNow. All rights reserved.</p>
+  </div>
+</footer>
+<script src="assets/app.js"></script>
+</body>
+</html>

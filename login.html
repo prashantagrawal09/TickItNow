@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Log In • TickItNow</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<header class="header">
+  <nav class="nav container">
+    <div class="logo"><span aria-hidden="true">🎟️</span><span class="brand">TickItNow</span></div>
+  </nav>
+</header>
+
+<main class="container" style="max-width:480px;padding-top:60px">
+  <div class="card">
+    <div class="card-body">
+      <h2>Log In</h2>
+      <form action="login_submit.php" method="post" novalidate>
+        <label class="meta" for="email">Email *</label>
+        <input id="email" name="email" type="email" required placeholder="you@example.com">
+
+        <label class="meta" for="password">Password *</label>
+        <input id="password" name="password" type="password" required placeholder="••••••••">
+
+        <div class="flex" style="margin-top:18px;justify-content:space-between">
+          <button class="btn primary" type="submit">Log In</button>
+          <a href="register.html" class="btn ghost">Create Account</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p class="copyright">© 2025 TickItNow. All rights reserved.</p>
+  </div>
+</footer>
+</body>
+</html>

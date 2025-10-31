@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contact Us • TickItNow</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<header class="header">
+  <nav class="nav container">
+    <div class="logo"><span aria-hidden="true">🎟️</span><span class="brand">TickItNow</span></div>
+    <div class="links">
+      <a href="index.html">Home</a>
+      <a href="shows.html">Browse Shows</a>
+      <a href="preferences.html">My Preferences</a>
+      <a class="active" href="contact.html">Contact</a>
+    </div>
+    <a class="btn" href="shows.html">Browse</a>
+  </nav>
+</header>
+
+<main class="container">
+  <section class="hero" style="padding:40px 0 0">
+    <h1 style="text-align:center;margin-bottom:14px;">How can we help you?</h1>
+    <p class="meta" style="text-align:center;margin-bottom:22px;">
+      For booking issues, account questions, or feedback—send us a message below.
+    </p>
+  </section>
+
+  <div class="grid" style="grid-template-columns: 1.1fr .9fr; gap:26px;">
+    <!-- Left: Form -->
+    <div class="card">
+      <div class="card-body">
+        <!-- IMPORTANT: For base version, use PHP action -->
+        <form action="contact_submit.php" method="post" novalidate>
+          <div style="margin-bottom:12px">
+            <label for="topic" class="meta">Topic</label>
+            <select id="topic" name="topic" required>
+              <option value="">Movies / Events / Theatre / Other</option>
+              <option>Booking help</option>
+              <option>Payment & refund</option>
+              <option>Account & login</option>
+              <option>Show listing</option>
+              <option>Other</option>
+            </select>
+          </div>
+
+          <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+              <label for="full_name" class="meta">Full name *</label>
+              <input id="full_name" name="full_name" required placeholder="Your full name">
+            </div>
+            <div>
+              <label for="email" class="meta">Email address *</label>
+              <input id="email" name="email" type="email" required placeholder="you@example.com">
+            </div>
+          </div>
+
+          <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px;margin-top:12px;">
+            <div>
+              <label for="phone" class="meta">Mobile number *</label>
+              <input id="phone" name="phone" type="tel" required placeholder="+65 9000 0000">
+            </div>
+            <div>
+              <label for="booking_ref" class="meta">Booking reference (optional)</label>
+              <input id="booking_ref" name="booking_ref" placeholder="e.g. TIN-AB12CD">
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <label for="message" class="meta">Briefly describe your issue *</label>
+            <textarea id="message" name="message" rows="5" required placeholder="Tell us what’s going on…"></textarea>
+          </div>
+
+          <div class="form-help">We typically respond within one business day.</div>
+
+          <div class="flex" style="margin-top:14px">
+            <button class="btn primary" type="submit">Submit</button>
+            <a class="btn ghost" href="index.html">Back to home</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Right: Help note -->
+    <div class="card">
+      <div class="card-body">
+        <strong>Issue with a booking?</strong>
+        <p class="meta" style="margin-top:6px">
+          Open TickItNow → go to your profile → tap <em>My Bookings</em> → select the booking → “Get help”.
+          Provide a short description and your booking reference for faster assistance.
+        </p>
+
+        <div class="note-box" style="margin-top:12px">
+          <strong>Data notice:</strong>
+          <p class="meta" style="margin:8px 0 0">
+            This student demo stores messages locally and sends acknowledgements only to your local mail server (per course rules).
+            No real payment or third-party email is used.
+          </p>
+        </div>
+
+        <div class="section">Other ways to reach us</div>
+        <ul class="meta" style="margin-top:0; padding-left:18px;">
+          <li>Email: support@localhost</li>
+          <li>Hours: Mon–Fri, 9:00–18:00 SGT</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-links">
+      <a href="terms.html">Terms &amp; Conditions</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="contact.html">Contact Us</a>
+      <a href="#">FAQs</a>
+    </div>
+    <p class="copyright">© 2025 TickItNow. All rights reserved.</p>
+  </div>
+</footer>
+<script src="assets/app.js"></script>
+</body>
+</html>
