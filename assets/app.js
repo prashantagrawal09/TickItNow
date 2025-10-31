@@ -214,3 +214,84 @@ function bootConfirm(){
     </div></div>
   `;
 }
+
+/* ===== Featured Movies Carousel (no libs) ===== */
+(function(){
+  const data = [
+    { id:1, title:"The Quantum Heist", blurb:"A crew of misfits cracks time to pull the ultimate job.", img:"https://picsum.photos/1200/600?random=11" },
+    { id:2, title:"Velvet Curtain",   blurb:"A backstage drama where the show must go on.",            img:"https://picsum.photos/1200/600?random=12" },
+    { id:3, title:"Neon Skies",       blurb:"Love and rebellion under a city of endless lights.",      img:"https://picsum.photos/1200/600?random=13" },
+    { id:4, title:"Moonlit Sonata",   blurb:"Music finds its way on a moonlit stage.",                img:"https://picsum.photos/1200/600?random=14" }
+  ];
+
+  const track = document.getElementById('carousel-track');
+  if(!track) return; // only on home page
+
+  // Build slides
+  track.innerHTML = data.map(d => `
+    <article class="slide" role="group" aria-roledescription="slide" aria-label="${d.title}">
+      <img src="${d.img}" alt="${d.title} poster">
+      <div class="caption">
+        <h3>${d.title}</h3>
+        <p class="meta">${d.blurb}</p>
+        <div class="actions">
+          <a class="btn primary" href="show.html?id=${d.id}">View Showtimes</a>
+          <a class="btn ghost" href="shows.html">Browse All</a>
+        </div>
+      </div>
+    </article>
+  `).join('');
+
+  // Dots
+  const dotsWrap = document.getElementById('carousel-dots');
+  dotsWrap.innerHTML = data.map((_,i)=>`<button aria-label="Go to slide ${i+1}" data-i="${i}"></button>`).join('');
+
+  const prevBtn = document.getElementById('carousel-prev');
+  const nextBtn = document.getElementById('carousel-next');
+  const dots = [...dotsWrap.querySelectorAll('button')];
+
+  let i = 0, N = data.length, timer = null, hovering = false;
+
+  function go(n){
+    i = (n + N) % N;
+    track.style.transform = `translateX(-${i*100}%)`;
+    dots.forEach((d,idx)=> d.setAttribute('aria-current', idx===i ? 'true' : 'false'));
+  }
+
+  function next(){ go(i+1); }
+  function prev(){ go(i-1); }
+
+  function start(){
+    stop();
+    timer = setInterval(()=>{ if(!hovering) next(); }, 4500);
+  }
+  function stop(){ if(timer) clearInterval(timer); }
+
+  // Events
+  nextBtn.addEventListener('click', ()=>{ next(); start(); });
+  prevBtn.addEventListener('click', ()=>{ prev(); start(); });
+  dots.forEach(d=> d.addEventListener('click', e=>{ go(+e.currentTarget.dataset.i); start(); }));
+
+  // Pause on hover
+  track.addEventListener('mouseenter', ()=>{ hovering = true; });
+  track.addEventListener('mouseleave', ()=>{ hovering = false; });
+
+  // Keyboard
+  track.tabIndex = 0;
+  track.addEventListener('keydown', e=>{
+    if(e.key === 'ArrowRight') { next(); start(); }
+    if(e.key === 'ArrowLeft')  { prev(); start(); }
+  });
+
+  // Basic swipe (mobile)
+  let sx=0, dx=0;
+  track.addEventListener('touchstart', e=>{ sx = e.touches[0].clientX; dx = 0; }, {passive:true});
+  track.addEventListener('touchmove',  e=>{ dx = e.touches[0].clientX - sx; }, {passive:true});
+  track.addEventListener('touchend',   ()=>{
+    if(Math.abs(dx) > 50){ dx < 0 ? next() : prev(); start(); }
+  });
+
+  // init
+  go(0);
+  start();
+})();

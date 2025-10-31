@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Create Account • TickItNow</title>
   <link rel="stylesheet" href="assets/styles.css">
+  <style>
+    .back-link {font-size:24px;color:var(--accent);text-decoration:none;margin-bottom:10px;display:inline-block;}
+    .back-link:hover {color:var(--accent-2);}
+    .error {color:var(--danger);font-size:14px;margin-top:4px;}
+  </style>
 </head>
 <body>
 <header class="header">
@@ -14,10 +19,11 @@
 </header>
 
 <main class="container" style="max-width:480px;padding-top:60px">
+  <a href="account.html" class="back-link">← Back</a>
   <div class="card">
     <div class="card-body">
       <h2>Create Account</h2>
-      <form action="register_submit.php" method="post" novalidate>
+      <form id="registerForm" action="register_submit.php" method="post" novalidate>
         <label class="meta" for="full_name">Full Name *</label>
         <input id="full_name" name="full_name" required placeholder="Your full name">
 
@@ -25,7 +31,8 @@
         <input id="email" name="email" type="email" required placeholder="you@example.com">
 
         <label class="meta" for="password">Password *</label>
-        <input id="password" name="password" type="password" minlength="6" required placeholder="••••••••">
+        <input id="password" name="password" type="password" minlength="8" required placeholder="••••••••">
+        <div id="errorMsg" class="error"></div>
 
         <div class="flex" style="margin-top:18px;justify-content:space-between">
           <button class="btn primary" type="submit">Create Account</button>
@@ -41,5 +48,29 @@
     <p class="copyright">© 2025 TickItNow. All rights reserved.</p>
   </div>
 </footer>
+
+<script>
+document.getElementById('registerForm').addEventListener('submit', function(e){
+  const email = document.getElementById('email').value.trim();
+  const pass  = document.getElementById('password').value;
+  const error = document.getElementById('errorMsg');
+  error.textContent = '';
+
+  // Email validation
+  const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  if(!emailPattern.test(email)){
+    e.preventDefault();
+    error.textContent = "Please enter a valid email address.";
+    return;
+  }
+
+  // Password validation: at least 8 chars, letters & numbers
+  if(pass.length < 8 || !/[A-Za-z]/.test(pass) || !/[0-9]/.test(pass)){
+    e.preventDefault();
+    error.textContent = "Password must be at least 8 characters and contain both letters and numbers.";
+    return;
+  }
+});
+</script>
 </body>
 </html>

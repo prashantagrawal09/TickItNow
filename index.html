@@ -18,92 +18,75 @@
       <a class="active" href="index.html">Home</a>
       <a href="shows.html">Browse Shows</a>
       <a href="preferences.html">My Preferences</a>
-      <a href="account.html" title="My Account">👤</a>
     </div>
-    <a class="btn" href="shows.html">Browse</a>
+
+      <a href="account.html" title="My Account" class="account-icon" style="font-size:24px;">👤</a>
   </nav>
 </header>
 
 <main class="container">
-  <section class="hero">
+  <section class="hero hero--compact">
     <div class="blob"></div><div class="blob-2"></div>
-    <div class="grid" style="grid-template-columns: 1.2fr .8fr; gap:26px; align-items:center;">
-      <div>
-        <h1>Find seats you’ll love.<br/>Book in <em style="font-style:normal;background:linear-gradient(90deg,#8ab4ff,#9cf3c7);-webkit-background-clip:text;background-clip:text;color:transparent">seconds</em>.</h1>
-        <p class="lead">Pick multiple showtimes in priority order. We check availability, you confirm the best options. Works for cinema <span class="badge">🍿</span> and theatre <span class="badge">🎭</span>.</p>
-        <div class="cta">
-          <a class="btn primary" href="shows.html">Browse Shows</a>
-          <a class="btn ghost" href="preferences.html">My Preferences <span class="kbd">⌘P</span></a>
-        </div>
-        <div class="grid cols-3" style="margin-top:22px">
-          <div class="feature card"><div class="card-body">
-            <div class="icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#9cc2ff" stroke-width="2"><path d="M5 12h14M12 5v14"/></svg>
-            </div>
-            <div>
-              <strong>Ranked picks</strong>
-              <div class="meta">Queue up backups so you never miss a show.</div>
-            </div>
-          </div></div>
-          <div class="feature card"><div class="card-body">
-            <div class="icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#9cf3c7" stroke-width="2"><path d="M3 12h18M4 12a8 8 0 0016 0"/></svg>
-            </div>
-            <div>
-              <strong>Live availability*</strong>
-              <div class="meta">See what’s open before you commit.</div>
-            </div>
-          </div></div>
-          <div class="feature card"><div class="card-body">
-            <div class="icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#ff92c2" stroke-width="2"><path d="M4 4h16v16H4zM8 8h8v8H8z"/></svg>
-            </div>
-            <div>
-              <strong>Instant confirmation</strong>
-              <div class="meta">Lock seats and get an email receipt.</div>
-            </div>
-          </div></div>
-        </div>
-      </div>
-      <div>
-        <div class="card"><div class="card-body">
-          <strong>Quick Search</strong>
-          <div class="grid" style="grid-template-columns:1fr 1fr auto; gap:10px; margin-top:10px">
-            <input placeholder="Search title or genre…">
-            <select><option value="">All Venues</option><option>Orchard Cineplex A</option><option>Marina Theatre Hall 2</option></select>
-            <a class="btn" href="shows.html">Find</a>
-          </div>
-          <p class="meta" style="margin-top:10px">Tip: Use the <span class="kbd">↑</span> <span class="kbd">↓</span> buttons on Preferences to rank choices.</p>
-        </div></div>
+
+    <div class="hero-left">
+      <h1>Find seats you’ll love.<br/>Book in <em class="text-gradient">seconds</em>.</h1>
+      <p class="lead lead--tight">Shortlist, check availability, confirm. That’s it.</p>
+      <div class="cta">
+        <a class="btn primary" href="shows.html">Browse Shows</a>
+        <a class="btn ghost" href="preferences.html">My Preferences</a>
       </div>
     </div>
   </section>
 
-  <div class="marquee" aria-hidden="true">
-    <div class="track">
-      <span>Orchard Cineplex A</span><span>Marina Theatre Hall 2</span><span>Jewel Cinema 5</span><span>Tampines Stage 1</span>
-      <span>Orchard Cineplex A</span><span>Marina Theatre Hall 2</span><span>Jewel Cinema 5</span><span>Tampines Stage 1</span>
-    </div>
-  </div>
+  <!-- Ultra-light benefits strip (no cards/shadows) -->
+  <section class="micro-strip">
+    <div class="micro-item">➕ Ranked picks</div>
+    <div class="micro-item">🟢 Live availability*</div>
+    <div class="micro-item">📩 Instant confirmation</div>
+  </section> <!-- ✅ properly closed -->
 
-  <section style="margin-top:26px">
-    <div class="section">Why TickItNow?</div>
-    <div class="grid cols-3">
-      <div class="card"><div class="card-body">
-        <strong>Clean seat flow</strong>
-        <p class="meta">Shortlist first, confirm later. It’s faster for groups and peak hours.</p>
-      </div></div>
-      <div class="card"><div class="card-body">
-        <strong>Mobile-friendly</strong>
-        <p class="meta">Touch targets, readable text, and responsive layout without any framework.</p>
-      </div></div>
-      <div class="card"><div class="card-body">
-        <strong>Accessible</strong>
-        <p class="meta">Semantic HTML, labels, and focus styles. Works great with keyboard navigation.</p>
-      </div></div>
+  <!-- ===== Featured + Quick Search Row (must be a sibling of micro-strip) ===== -->
+  <section class="featured-row">
+    <!-- Left: Slideshow -->
+    <div class="carousel" id="hero-carousel" aria-label="Featured movies">
+      <div class="carousel-track" id="carousel-track"></div>
+      <button class="carousel-btn prev" id="carousel-prev" aria-label="Previous slide">‹</button>
+      <button class="carousel-btn next" id="carousel-next" aria-label="Next slide">›</button>
+      <div class="carousel-dots" id="carousel-dots" aria-label="Slide navigation"></div>
     </div>
+
+    <!-- Right: Quick Search -->
+    <aside class="quicksearch card">
+      <div class="card-body">
+        <strong>Quick Search</strong>
+        <form action="show.html" method="get" style="margin-top:10px">
+          <label class="meta" for="qs-title">Movie / Show</label>
+          <select id="qs-title" name="id" required>
+            <option value="">Select a title…</option>
+            <option value="1">The Quantum Heist</option>
+            <option value="2">Velvet Curtain</option>
+            <option value="3">Neon Skies</option>
+            <option value="4">Moonlit Sonata</option>
+            <option value="5">The Last Encore</option>
+          </select>
+
+          <label class="meta" for="qs-venue" style="margin-top:10px">Venue</label>
+          <select id="qs-venue" name="venue">
+            <option value="">All Venues</option>
+            <option>Orchard Cineplex A</option>
+            <option>Marina Theatre Hall 2</option>
+            <option>Jewel Cinema 5</option>
+            <option>Tampines Stage 1</option>
+          </select>
+
+          <button class="btn" type="submit" style="margin-top:12px; color: black;">Find</button>
+        </form>
+        <p class="meta tip" style="margin-top:10px">Tip: Use the ↑ ↓ buttons on Preferences to rank choices.</p>
+      </div>
+    </aside>
   </section>
 </main>
+
 
 <footer class="site-footer">
   <div class="container">
