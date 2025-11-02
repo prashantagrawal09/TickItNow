@@ -1,6 +1,5 @@
 <?php
-// server/db.php
-$dsn = "mysql:host=localhost;dbname=tickitnow;charset=utf8mb4";
+$dsn = "mysql:host=localhost;dbname=TickItnow;charset=utf8mb4";
 $user = "root";
 $pass = "";
 $options = [
@@ -8,3 +7,4 @@ $options = [
   PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
 ];
 $pdo = new PDO($dsn, $user, $pass, $options);
+?>

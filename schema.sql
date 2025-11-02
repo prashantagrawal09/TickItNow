@@ -71,3 +71,22 @@ CREATE TABLE contact_messages (
   message TEXT NOT NULL,
   created_at DATETIME NOT NULL
 );
+
+CREATE TABLE shows (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(120) NOT NULL,
+  synopsis TEXT,
+  genre VARCHAR(50),
+  rating VARCHAR(10),
+  duration VARCHAR(20),
+  poster_url VARCHAR(255)
+);
+
+CREATE TABLE schedules (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  show_id INT NOT NULL,
+  venue VARCHAR(120) NOT NULL,
+  start_at DATETIME NOT NULL,
+  price DECIMAL(8,2) NOT NULL,
+  FOREIGN KEY (show_id) REFERENCES shows(id)
+);

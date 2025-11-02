@@ -1,61 +1,83 @@
-
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy"
+      content="default-src 'self';
+               style-src 'self' 'unsafe-inline';
+               script-src 'self' 'unsafe-inline';
+               img-src 'self' data:;
+               frame-src https://www.youtube-nocookie.com https://www.youtube.com;
+               connect-src 'self';">
   <title>TickItNow • Show Details</title>
   <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body onload="bootShowDetails()">
 <header class="header">
   <nav class="nav container">
-    <div class="logo"><span aria-hidden="true">🎟️</span><span>TickItNow</span></div>
+    <div class="logo">
+      <span aria-hidden="true">🎟️</span>
+      <span class="brand">TickItNow</span>
+    </div>
     <div class="links">
       <a href="index.html">Home</a>
       <a href="shows.html">Browse Shows</a>
       <a href="preferences.html">My Preferences</a>
-      <a href="account.html" title="My Account">👤</a>
     </div>
-    <a class="btn" href="preferences.html">Preferences</a>
+    <a href="account.html" title="My Account" class="account-icon" style="font-size:24px;">👤</a>
   </nav>
 </header>
 
 <main class="container">
-  <div class="grid cols-3">
-    <div class="card" style="grid-column: span 2;">
-      <div class="card-body">
-        <h2 id="show-title">Show Title</h2>
-        <p id="show-meta" class="meta">Meta info</p>
-        <table class="table" style="margin-top:10px">
-          <thead><tr><th>Start</th><th>Venue</th><th>Price</th><th class="right">Action</th></tr></thead>
-          <tbody id="show-schedule"></tbody>
-        </table>
-        <p class="meta">Adding to preferences only stores your choices on this device for now. In the full build, this will be saved server-side.</p>
+  <!-- Movie header with TRAILER (replaces poster) -->
+  <section class="card" style="overflow:hidden">
+    <div class="card-body">
+      <div class="show-hero-grid">
+        <div class="video-wrap">
+          <iframe id="show-trailer"
+                  src=""
+                  title="Trailer"
+                  frameborder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerpolicy="strict-origin-when-cross-origin"
+                  allowfullscreen></iframe>
+        </div>
+        <div>
+          <h2 id="show-title">Loading…</h2>
+          <p id="show-meta" class="meta">—</p>
+          <p id="show-synopsis" class="meta" style="margin-top:8px"></p>
+        </div>
       </div>
     </div>
-    <div class="card">
-      <div class="card-body">
-        <strong>About</strong>
-        <p class="meta">A short synopsis of the movie/play goes here. Replace with real content for your dataset.</p>
-        <div class="section">Tags</div>
-        <div class="flex"><span class="badge">Action</span><span class="badge">PG13</span><span class="badge">2h 10m</span></div>
-      </div>
-    </div>
+  </section>
+
+  <!-- Date strip (JS fills the days) -->
+  <section class="date-strip" id="date-strip" aria-label="Select date"></section>
+
+  <!-- (Optional) legend -->
+  <div class="meta" style="margin:8px 0 14px; opacity:.9">
+    <span class="dot dot-okay"></span> Available
+    <span class="dot dot-fast"></span> Filling fast
+    <span class="dot dot-low"></span> Almost full
   </div>
+
+  <!-- Venues + times (JS renders) -->
+  <section id="venue-list" class="venue-list"></section>
 </main>
 
 <footer class="site-footer">
   <div class="container">
     <div class="footer-links">
-      <a href="#">Terms &amp; Conditions</a>
-      <a href="#">Privacy Policy</a>
+      <a href="terms.html">Terms &amp; Conditions</a>
+      <a href="privacy.html">Privacy Policy</a>
       <a href="contact.html">Contact Us</a>
       <a href="#">FAQs</a>
     </div>
     <p class="copyright">© 2025 TickItNow. All rights reserved.</p>
   </div>
 </footer>
+
 <script src="assets/app.js"></script>
 </body>
 </html>

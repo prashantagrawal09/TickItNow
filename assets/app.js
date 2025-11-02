@@ -47,11 +47,11 @@ function fmtDateTime(iso){
 // shows.html – populate static gallery
 function bootShows(){
   const shows = [
-    {id:1,title:"Fight Club",genre:"Action",rating:"G",poster:"assets/posters/Fight Club.jpeg"},
-    {id:2,title:"The Wolf of Wall Street",genre:"Drama",rating:"PG",poster:"assets/posters/The Wolf of Wall Street.jpeg"},
-    {id:3,title:"Interstellar",genre:"Sci‑Fi",rating:"NC16",poster:"assets/posters/Interstellar.jpeg"},
-    {id:4,title:"Spiderman",genre:"Action",rating:"PG",poster:"assets/posters/Spiderman.jpeg"},
-    {id:5,title:"Hacksaw Ridge",genre:"Action",rating:"PG",poster:"assets/posters/Hacksaw Ridge.jpeg"}
+    {id:1,title:"Fight Club",genre:"Action",rating:"R",poster:"assets/posters/fightclub.jpeg"},
+    {id:2,title:"The Wolf of Wall Street",genre:"Biography",rating:"R",poster:"assets/posters/wolf.jpeg"},
+    {id:3,title:"Interstellar",genre:"Sci‑Fi",rating:"PG13",poster:"assets/posters/interstellar.jpeg"},
+    {id:4,title:"Spiderman",genre:"Action",rating:"PG13",poster:"assets/posters/spiderman.jpeg"},
+    {id:5,title:"Hacksaw Ridge",genre:"Sci-Fi",rating:"PG13",poster:"assets/posters/hacksaw.jpeg"}
   ];
   const grid = qsel("#shows-grid");
   if (!grid) return;
@@ -70,66 +70,85 @@ function bootShows(){
   `).join("");
 }
 
-// show.html – details + add-to-preferences
-function bootShowDetails(){
-  const params = new URLSearchParams(location.search);
-  const id = Number(params.get("id") || 1);
-  const titleMap = {
-    1:"Fight Club",2:"The Wolf of Wall Street",3:"Interstellar",4:"Spiderman",5:"Hacksaw Ridge"
-  };
-  const venues = ["Orchard Cineplex A","Marina Theatre Hall 2","Jewel Cinema 5","Tampines Stage 1"];
-  const fakeShowtimes = [0,1,2,3,4].map(i=>{
-    const start = new Date(Date.now()+ (i+1)*36e5).toISOString();
-    const venue = venues[i%venues.length];
-    const price = [12.0, 14.5, 16.0][i%3];
-    return {id, title:titleMap[id], start_at:start, venue, price};
-  });
-
-  const title = titleMap[id];
-  qsel("#show-title").textContent = title;
-  qsel("#show-meta").textContent = "Genre • Rating • 2h 10m";
-  qsel("#show-schedule").innerHTML = fakeShowtimes.map(st=>`
-    <tr>
-      <td>${fmtDateTime(st.start_at)}</td>
-      <td>${st.venue}</td>
-      <td>$${st.price.toFixed(2)}</td>
-      <td class="right">
-        <form onsubmit="event.preventDefault(); PREFS.add(${JSON.stringify(st)});">
-          <label class="kbd">Tickets</label>
-          <input required min="1" max="10" type="number" name="t" value="2" style="width:70px;margin:0 8px" 
-            oninput="this.closest('form').dataset.tickets=this.value">
-          <button class="btn success">Add to Preferences</button>
-        </form>
-      </td>
-    </tr>
-  `).join("");
-}
 
 // preferences.html – ranked list
-function renderPreferences(){
-  const tbody = qsel("#prefs-body");
-  const items = PREFS.get();
+// preferences.html – load from DB first, fall back to localStorage
+async function renderPreferences(){
+  const tbody = document.querySelector("#prefs-body");
   if (!tbody) return;
-  if (!items.length){
-    tbody.innerHTML = `<tr><td colspan="6" class="meta">No preferences yet. Go to <a href="shows.html">Browse Shows</a>.</td></tr>`;
+
+  let rows = [];
+  try{
+    const r = await fetch('api/list_preferences.php', {headers:{'Accept':'application/json'}});
+    if(r.ok) rows = await r.json();
+  }catch(e){ /* ignore */ }
+
+  // Fallback to localStorage only if server is empty (keep your old behavior)
+  if(!rows.length){
+    const items = PREFS.get();
+    if(!items.length){
+      tbody.innerHTML = `<tr><td colspan="6" class="meta">No preferences yet. Go to <a href="shows.html">Browse Shows</a>.</td></tr>`;
+      return;
+    }
+    // local format
+    tbody.innerHTML = items.map(x=>`
+      <tr>
+        <td><span class="badge">#${x.rank_pos}</span></td>
+        <td>${x.title}<div class="meta">${x.venue}</div></td>
+        <td>${fmtDateTimeLocal(x.start_at)}</td>
+        <td>${x.tickets || 2}</td>
+        <td>$${Number(x.price||0).toFixed(2)}</td>
+        <td class="right">
+          <button class="btn" onclick="PREFS.move(${x.id}, '${x.start_at}','up')">↑</button>
+          <button class="btn" onclick="PREFS.move(${x.id}, '${x.start_at}','down')">↓</button>
+          <button class="btn danger" onclick="PREFS.remove(${x.id}, '${x.start_at}'); renderPreferences()">Remove</button>
+        </td>
+      </tr>
+    `).join('');
     return;
   }
-  tbody.innerHTML = items.map(x=>`
+
+  // Server rows
+  tbody.innerHTML = rows.map((x,i)=>`
     <tr>
-      <td><span class="badge">#${x.rank_pos}</span></td>
-      <td>${x.title}<div class="meta">${x.venue}</div></td>
-      <td>${fmtDateTime(x.start_at)}</td>
-      <td>${x.tickets || 2}</td>
+      <td><span class="badge">#${i+1}</span></td>
+      <td>${x.show_title || ('Show #' + x.show_id)}<div class="meta">${x.venue_name}</div></td>
+      <td>${fmtDateTimeLocal(x.start_at_iso)}</td>
+      <td>${x.qty}</td>
       <td>$${Number(x.price||0).toFixed(2)}</td>
       <td class="right">
-        <button class="btn" onclick="PREFS.move(${x.id}, '${x.start_at}','up')">↑</button>
-        <button class="btn" onclick="PREFS.move(${x.id}, '${x.start_at}','down')">↓</button>
-        <button class="btn danger" onclick="PREFS.remove(${x.id}, '${x.start_at}'); renderPreferences()">Remove</button>
+        <button class="btn" onclick="movePref(${x.id}, 'up')">↑</button>
+        <button class="btn" onclick="movePref(${x.id}, 'down')">↓</button>
+        <button class="btn danger" onclick="removePref(${x.id})">Remove</button>
       </td>
     </tr>
-  `).join("");
+  `).join('');
 }
 
+function fmtDateTimeLocal(isoLocal){
+  // isoLocal like "2025-11-05T19:00:00" (no Z) -> treat as LOCAL, not UTC
+  if(!isoLocal) return '';
+  const d = new Date(isoLocal); // parsed as local time because no Z
+  return d.toLocaleString();
+}
+
+async function removePref(id){
+  const form = new URLSearchParams(); form.set('id', id);
+  const r = await fetch('api/remove_preference.php', { method:'POST', body:form });
+  if(r.ok){ await renderPreferences(); } else { alert('Failed to remove'); }
+}
+
+async function clearAllPrefs(){
+  if(!confirm('Clear all preferences?')) return;
+  const r = await fetch('api/clear_preferences.php', { method:'POST' });
+  if(r.ok){ await renderPreferences(); } else { alert('Failed to clear'); }
+}
+
+async function movePref(id, dir){
+  const form = new URLSearchParams(); form.set('id', id); form.set('dir', dir);
+  const r = await fetch('api/move_preference.php', { method:'POST', body:form });
+  if(r.ok){ await renderPreferences(); } else { alert('Failed to move'); }
+}
 // available.html – simulate availability & build form for final selection
 function bootAvailable(){
   const list = PREFS.get();
@@ -218,10 +237,11 @@ function bootConfirm(){
 /* ===== Featured Movies Carousel (no libs) ===== */
 (function(){
   const data = [
-    { id:1, title:"Fight Club", blurb:"An underground fight club becomes something far darker.", img:"assets/posters/Fight Club.jpeg" },
-    { id:2, title:"The Wolf of Wall Street",   blurb:"Greed, excess, and chaos on Wall Street.",            img:"assets/posters/The Wolf of Wall Street 2.jpeg" },
-    { id:3, title:"Interstellar",       blurb:"A journey through space to save humanity.",      img:"assets/posters/Interstellar.jpeg" },
-    { id:4, title:"Spiderman",   blurb:"An ordinary teen discovers extraordinary power.",                img:"assets/posters/Spiderman.jpeg" }
+    { id:1, title:"Fight Club", blurb:"An underground fight club becomes something far darker.", img:"assets/posters/fightclub.jpeg" },
+    { id:2, title:"The Wolf of Wall Street",   blurb:"Greed, excess, and chaos on Wall Street.",            img:"assets/posters/wolf.jpeg" },
+    { id:3, title:"Interstellar",       blurb:"A journey through space to save humanity.",      img:"assets/posters/interstellar.jpeg" },
+    { id:4, title:"Spiderman",   blurb:"An ordinary teen discovers extraordinary power.",                img:"assets/posters/spiderman.jpeg" },
+    {id:5,title:"Hacksaw Ridge",blurb:"A medic’s courage turns the tide on the bloodiest battlefield." ,img:"assets/posters/hacksaw.jpeg"}
   ];
 
   const track = document.getElementById('carousel-track');
@@ -295,3 +315,286 @@ function bootConfirm(){
   go(0);
   start();
 })();
+
+/* ===== Show page ===== */
+function toEmbed(url){
+  if(!url) return "";
+  try{
+    const u = new URL(url);
+    if (u.hostname.includes('youtu.be'))
+      return `https://www.youtube-nocookie.com/embed/${u.pathname.slice(1)}?autoplay=0&mute=0&rel=0`;
+    if (u.hostname.includes('youtube.com')){
+      const v = u.searchParams.get('v');
+      if (v) return `https://www.youtube-nocookie.com/embed/${v}?autoplay=0&mute=0&rel=0`;
+      const parts = u.pathname.split('/');
+      const id = parts.includes('embed') ? parts[parts.indexOf('embed')+1]
+               : parts.includes('shorts') ? parts[parts.indexOf('shorts')+1]
+               : null;
+      if (id) return `https://www.youtube-nocookie.com/embed/${id}?autoplay=0&mute=0&rel=0`;
+    }
+  }catch(e){}
+  return url;
+}
+
+function bootShowDetails(){
+  const id = new URLSearchParams(location.search).get('id');
+  const qs  = new URLSearchParams(location.search);
+  const preVenue = qs.get('venue');      // e.g. "pvr1"
+  const preDate  = qs.get('date');       // "YYYY-MM-DD"
+
+  const dateStrip = document.getElementById('date-strip');
+  const venueList = document.getElementById('venue-list');
+  if(!id || !dateStrip || !venueList) return;
+
+  // ----- MOVIE HEADER (unchanged) -----
+  const MOVIES = {
+    1:{title:'Fight Club', genre:'Action', rating:'R',   duration:'2h 19m',
+       synopsis:'An underground fight club becomes something far darker.',
+       trailer_url:'https://www.youtube.com/watch?v=SUXWAEX2jlg'},
+    2:{title:'The Wolf of Wall Street', genre:'Biography', rating:'R', duration:'2h 59m',
+       synopsis:'Greed, excess, and chaos on Wall Street.',
+       trailer_url:'https://www.youtube.com/watch?v=iszwuX1AK6A'},
+    3:{title:'Interstellar', genre:'Sci-Fi', rating:'PG13', duration:'2h 49m',
+       synopsis:'A journey through space to save humanity.',
+       trailer_url:'https://www.youtube.com/watch?v=zSWdZVtXT7E'},
+    4:{title:'Spider-Man', genre:'Action', rating:'PG13', duration:'2h 10m',
+       synopsis:'An ordinary teen discovers extraordinary power.',
+       trailer_url:'https://www.youtube.com/watch?v=t06RUxPbp_c'},
+    5:{title:'Hacksaw Ridge', genre:'War', rating:'R', duration:'2h 19m',
+       synopsis:'A medic’s courage turns the tide on the bloodiest battlefield.',
+       trailer_url:'https://www.youtube.com/watch?v=s2-1hz1juBI'}
+  };
+  const show = MOVIES[id] || {title:'Show', genre:'—', rating:'—', duration:'—', synopsis:'', trailer_url:''};
+  document.getElementById('show-title').textContent = show.title;
+  document.getElementById('show-meta').textContent  = `${show.genre} • ${show.duration} • Rated ${show.rating}`;
+  document.getElementById('show-synopsis').textContent = show.synopsis;
+  const iframe = document.getElementById('show-trailer');
+  const embed = toEmbed(show.trailer_url);
+  if(embed){ iframe.src = embed; } else { document.querySelector('.video-wrap').style.display='none'; }
+
+  // ----- DATES (5 days) -----
+  function fmtLocalDate(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`; // YYYY-MM-DD in LOCAL time
+  }
+  
+  const days = [...Array(5)].map((_,i)=>{
+    const d = new Date();
+    d.setHours(0,0,0,0);     // normalize to midnight local
+    d.setDate(d.getDate()+i);
+    return {
+      key: fmtLocalDate(d),
+      dow: d.toLocaleDateString(undefined,{weekday:'short'}),
+      day: d.getDate(),
+      mon: d.toLocaleDateString(undefined,{month:'short'})
+    };
+  });
+
+  // ----- VENUES (Singapore, keep your IDs) -----
+  const venues = [
+    { id:'inox', name:'Orchard Cineplex A',   distance:'2.5 km', cancel:true },
+    { id:'pvr1', name:'Marina Theatre Hall 2',distance:'2.6 km', cancel:true },
+    { id:'pvr2', name:'Jewel Cinema 5',       distance:'3.8 km', cancel:true },
+    { id:'pvr3', name:'Tampines Stage 1',     distance:'5.8 km', cancel:true },
+  ];
+  const baseTimes = ['09:55 PM','10:25 PM','10:55 PM','11:25 PM'];
+
+  // build per-day schedule (demo)
+  const byDate = {};
+  days.forEach((d,i)=>{
+    byDate[d.key] = venues.map((v,vi)=>({
+      ...v,
+      times: baseTimes.map((t,ti)=>{
+        const [hm,ampm]=t.split(' '); let [h,m]=hm.split(':').map(Number);
+        m=(m+((i+vi+ti)%3)*5)%60; if(m<10)m='0'+m;
+        return `${h}:${m} ${ampm}`;
+      })
+    }));
+  });
+
+  // ----- Render date pills -----
+  dateStrip.innerHTML = days.map((d,i)=>`
+    <button class="date-pill ${i===0?'active':''}" data-date="${d.key}">
+      <small>${d.dow} • ${d.mon}</small><strong>${d.day}</strong>
+    </button>
+  `).join('');
+
+  // initial selected date (URL preselect if given)
+  let selectedDate = days[0].key;
+  if (preDate && days.some(d=>d.key===preDate)) {
+    selectedDate = preDate;
+    // visually mark the pill
+    requestAnimationFrame(()=>{
+      [...dateStrip.children].forEach((b,idx)=> b.classList.toggle('active', days[idx].key===preDate));
+    });
+  }
+
+  // render venues for date (filter by preVenue if provided)
+  function renderDay(key){
+    let rows = byDate[key] || [];
+    if (preVenue) rows = rows.filter(v => v.id === preVenue);
+    venueList.innerHTML = rows.map(v=>`
+      <article class="venue-card" data-venue="${v.id}">
+        <div class="venue-header">
+          <div>
+            <div class="venue-name">${v.name}</div>
+            <div class="venue-meta">${v.distance} away • ${v.cancel?'Allows cancellation':'No cancellation'}</div>
+          </div>
+          <button class="btn ghost btn-sm" aria-label="Favourite">♡</button>
+        </div>
+        <div class="times">
+          ${v.times.map(t=>`<button class="time-btn" data-time="${t}" data-venue="${v.id}">${t}</button>`).join('')}
+        </div>
+        <div class="booking-drawer" id="drawer-${v.id}">
+          <div class="booking-grid">
+            <select id="class-${v.id}">
+              <option value="Standard|12.00">Standard — $12.00</option>
+              <option value="Premium|15.50">Premium — $15.50</option>
+              <option value="VIP|18.00">VIP — $18.00</option>
+            </select>
+            <select id="qty-${v.id}">
+              ${[1,2,3,4,5,6].map(n=>`<option>${n}</option>`).join('')}
+            </select>
+            <button class="btn primary" id="add-${v.id}">Add</button>
+          </div>
+          <div class="meta" id="sum-${v.id}" style="margin-top:8px"></div>
+        </div>
+      </article>
+    `).join('');
+  }
+
+  renderDay(selectedDate);
+
+  // change date
+  dateStrip.addEventListener('click', e=>{
+    const btn = e.target.closest('.date-pill'); if(!btn) return;
+    selectedDate = btn.dataset.date;
+    [...dateStrip.children].forEach(b=>b.classList.toggle('active', b===btn));
+    renderDay(selectedDate);
+  });
+
+  // ----- Helpers -----
+  // combine YYYY-MM-DD with "hh:mm AM/PM" => "YYYY-MM-DD HH:MM:00"
+  function combineDateTime(dateStr, timeLabel){
+    const [hm, ampm] = timeLabel.split(' ');
+    let [h,m] = hm.split(':').map(Number);
+    if (ampm.toUpperCase()==='PM' && h !== 12) h += 12;
+    if (ampm.toUpperCase()==='AM' && h === 12) h = 0;
+    const hh = String(h).padStart(2,'0');
+    const mm = String(m).padStart(2,'0');
+    return `${dateStr} ${hh}:${mm}:00`;
+  }
+
+  // ----- Interactions: open drawer / add preference -----
+  venueList.addEventListener('click', async (e)=>{
+    const tbtn = e.target.closest('.time-btn');
+    if(tbtn){
+      const venueId = tbtn.dataset.venue;
+      const drawer = document.getElementById(`drawer-${venueId}`);
+      drawer.dataset.time = tbtn.dataset.time;
+      drawer.classList.add('open');
+
+      const cls = document.getElementById(`class-${venueId}`);
+      const qty = document.getElementById(`qty-${venueId}`);
+      const sum = document.getElementById(`sum-${venueId}`);
+      const upd = ()=>{
+        const [label, price] = cls.value.split('|');
+        const q = parseInt(qty.value,10);
+        sum.textContent = `${label} × ${q} at ${drawer.dataset.time} — Total $${(q*parseFloat(price)).toFixed(2)}`;
+      };
+      cls.onchange = upd; qty.onchange = upd; upd();
+      return;
+    }
+
+    const addBtn = e.target.id?.startsWith('add-') ? e.target : null;
+    if(addBtn){
+      const venueId = addBtn.id.replace('add-','');
+      const drawer = document.getElementById(`drawer-${venueId}`);
+      const [label, priceStr] = document.getElementById(`class-${venueId}`).value.split('|');
+      const qty = parseInt(document.getElementById(`qty-${venueId}`).value,10);
+      const time = drawer.dataset.time;
+
+      // venue name from the card
+      const card = addBtn.closest('.venue-card');
+      const venueName = card.querySelector('.venue-name')?.textContent?.trim() || venueId;
+
+      // payload for DB
+      const payload = {
+        show_id: parseInt(id, 10),
+        venue_id: venueId,
+        venue_name: venueName,
+        start_at: combineDateTime(selectedDate, time),
+        ticket_class: label,
+        qty: qty,
+        price: parseFloat(priceStr)
+      };
+
+      try{
+        const r = await fetch('api/add_preference.php', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await r.json();
+        if(!r.ok || json.error){
+          alert(json.error || 'Failed to save.');
+          return;
+        }
+
+        // Keep localStorage in sync for your existing UI
+        if(window.PREFS?.add){
+          PREFS.add({
+            id: payload.show_id,
+            title: document.querySelector('#show-title')?.textContent || `Show #${payload.show_id}`,
+            venue: payload.venue_name,
+            start_at: payload.start_at,
+            tickets: payload.qty,
+            price: payload.price
+          });
+        } else {
+          alert('Saved!');
+        }
+
+        drawer.classList.remove('open');
+      }catch(err){
+        console.error(err);
+        alert('Network error saving preference');
+      }
+    }
+  });
+}
+
+function populateQuickSearchDate() {
+  const sel = document.getElementById('qs-date');
+  if (!sel) return; // only present on the home page
+
+  // Helper to format a local date as YYYY-MM-DD
+  function fmtLocalDate(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  sel.innerHTML = '';
+
+  for (let i = 0; i < 5; i++) {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + i);
+
+    const opt = document.createElement('option');
+    opt.value = fmtLocalDate(d); // LOCAL date value
+    const label = d.toLocaleDateString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    });
+    opt.textContent = (i === 0 ? 'Today — ' : '') + label;
+    sel.appendChild(opt);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', populateQuickSearchDate);
