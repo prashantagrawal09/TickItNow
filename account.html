@@ -6,95 +6,51 @@
   <title>Account • TickItNow</title>
   <link rel="stylesheet" href="assets/styles.css">
 </head>
-<body>
-    <header class="header">
-        <nav class="nav container">
-          <div class="logo">
-            <span aria-hidden="true">🎟️</span>
-            <span class="brand">TickItNow</span>
-          </div>
-          <div class="links">
-            <a href="index.html">Home</a>
-            <a href="shows.html">Browse Shows</a>
-            <a href="preferences.html">My Preferences</a>
-          </div>
-          <!-- 👤 keep the right-side icon on all pages for consistent alignment -->
-          <a href="account.html" title="My Account" class="account-icon" style="font-size:24px;" aria-current="page">👤</a>
-        </nav>
-      </header>
 
-      <main class="container" style="max-width:900px;padding-top:24px">
-        <div id="account-root"></div>
-      </main>
-      
-      <script>
-      (async function(){
-        // fetch user + orders
-        const me = await fetch('api/me.php').then(r=>r.json()).catch(_=>({authenticated:false}));
-        const root = document.getElementById('account-root');
-      
-        if(!me.authenticated){
-          root.innerHTML = `
-            <div class="card"><div class="card-body" style="text-align:center">
-              <h2>Your Account</h2>
-              <p class="meta">Log in to view your details and order history.</p>
-              <div class="flex" style="justify-content:center;gap:12px;margin-top:12px">
-                <a href="login.html" class="btn primary">Log In</a>
-                <a href="register.html" class="btn ghost">Create Account</a>
-              </div>
-            </div></div>
-          `;
-          return;
-        }
-      
-        const hist = await fetch('api/order_history.php').then(r=>r.json()).catch(_=>({orders:[]}));
-        const orders = hist.orders || [];
-      
-        root.innerHTML = `
-          <div class="grid" style="grid-template-columns: 1fr 1.5fr; gap:16px">
-            <div class="card"><div class="card-body">
-              <h2>Profile</h2>
-              <div class="meta" style="margin-top:8px">Name</div>
-              <div>${me.name || '-'}</div>
-              <div class="meta" style="margin-top:8px">Email</div>
-              <div>${me.email || '-'}</div>
-              <div class="meta" style="margin-top:8px">Phone</div>
-              <div>${me.phone || '-'}</div>
-              <div class="flex" style="gap:10px;margin-top:14px">
-                <a class="btn ghost" href="index.html">Home</a>
-                <a class="btn danger" href="api/logout.php">Log out</a>
-              </div>
-            </div></div>
-      
-            <div class="card"><div class="card-body">
-              <h2>Order History</h2>
-              ${orders.length ? `
-                <table class="table" style="margin-top:10px">
-                  <thead><tr><th>ID</th><th>Date</th><th>Total</th><th>Items</th></tr></thead>
-                  <tbody>
-                    ${orders.map(o=>`
-                      <tr>
-                        <td>#${o.booking_id}</td>
-                        <td>${new Date(o.created_at).toLocaleString()}</td>
-                        <td>$${Number(o.total||0).toFixed(2)}</td>
-                        <td>
-                          ${o.items.map(x=>`
-                            <div class="meta">
-                              ${x.venue_name} • Show ${x.show_id} • ${x.ticket_class} ×${x.qty} •
-                              ${new Date(x.start_at.replace(' ','T')).toLocaleString()}
-                            </div>
-                          `).join('')}
-                        </td>
-                      </tr>
-                    `).join('')}
-                  </tbody>
-                </table>
-              ` : `<p class="meta" style="margin-top:8px">No orders yet.</p>`}
-            </div></div>
-          </div>
-        `;
-      })();
-      </script>
+<body>
+<header class="header">
+  <nav class="nav container">
+    <div class="logo">
+      <span aria-hidden="true">🎟️</span>
+      <span class="brand">TickItNow</span>
+    </div>
+    <div class="links">
+      <a href="index.html">Home</a>
+      <a href="shows.html">Browse Shows</a>
+      <a href="preferences.html">My Preferences</a>
+    </div>
+    <a href="account.html" title="My Account" class="account-icon" style="font-size:24px;" aria-current="page">👤</a>
+  </nav>
+</header>
+
+<main class="container" style="max-width:900px;padding-top:40px">
+  <h1>My Account</h1>
+
+  <!-- Placeholder replaced by JS -->
+  <div id="account-pane" class="card" style="margin-top:16px;">
+    <div class="card-body">
+      <p class="meta">Loading your account…</p>
+    </div>
+  </div>
+
+  <!-- Hidden until user logs in -->
+  <div id="order-history" class="card" style="margin-top:16px; display:none">
+    <div class="card-body">
+      <h2>Order History</h2>
+      <table class="table" style="margin-top:10px">
+        <thead>
+          <tr>
+            <th>Ref</th>
+            <th>Date</th>
+            <th>Total</th>
+            <th>Items</th>
+          </tr>
+        </thead>
+        <tbody id="order-body"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
 
 <footer class="site-footer">
   <div class="container">
@@ -106,5 +62,20 @@
     <p class="copyright">© 2025 TickItNow. All rights reserved.</p>
   </div>
 </footer>
+
+<!-- Load app.js -->
+<script src="assets/app.js?v=dev1"></script>
+
+<!-- Safely run bootAccount after load -->
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    if (window.bootAccount) {
+      window.bootAccount();
+    } else {
+      console.error("bootAccount() not found — check that assets/app.js loaded correctly");
+    }
+  });
+</script>
+
 </body>
 </html>

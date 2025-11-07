@@ -356,3 +356,15 @@ form label.meta{ display:block; margin-top:10px; margin-bottom:4px; }
   height: 100%;
   display: block;
 }
+.btn.btn-disabled,
+a.btn.btn-disabled {
+  opacity: 0.6;
+  pointer-events: auto; /* we still need to capture click to show alert */
+  cursor: not-allowed;
+}
+
+.nav .links a.active {
+  color: #ff3366;           /* standout color */
+  font-weight: 600;         /* make it bolder */
+  border-bottom: 2px solid #ff3366;
+}

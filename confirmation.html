@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -7,7 +6,7 @@
   <title>TickItNow • Confirmation</title>
   <link rel="stylesheet" href="assets/styles.css">
 </head>
-<body onload="bootConfirm()">
+<body>
 <header class="header">
   <nav class="nav container">
     <div class="logo"><span aria-hidden="true">🎟️</span><span>TickItNow</span></div>
@@ -21,6 +20,9 @@
 </header>
 
 <main class="container" id="confirm-body">
+  <div class="card"><div class="card-body">
+    <p class="meta">Loading confirmation…</p>
+  </div></div>
 </main>
 
 <footer class="site-footer">
@@ -34,6 +36,21 @@
     <p class="copyright">© 2025 TickItNow. All rights reserved.</p>
   </div>
 </footer>
-<script src="assets/app.js"></script>
+
+<!-- Load your app code with a cache-buster -->
+<script src="assets/app.js?v=dev1"></script>
+
+<!-- Safely invoke and also re-render on BFCache restores -->
+<script>
+  if (window.bootConfirm) {
+    window.bootConfirm();
+  } else {
+    alert('bootConfirm() not found. Is assets/app.js loaded?');
+  }
+  // Re-render when the page is shown from browser cache (back/forward)
+  window.addEventListener('pageshow', () => {
+    if (window.bootConfirm) window.bootConfirm();
+  });
+</script>
 </body>
 </html>

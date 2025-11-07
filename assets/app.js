@@ -87,6 +87,7 @@ async function renderPreferences(){
     const items = PREFS.get();
     if(!items.length){
       tbody.innerHTML = `<tr><td colspan="6" class="meta">No preferences yet. Go to <a href="shows.html">Browse Shows</a>.</td></tr>`;
+      setReviewAvailabilityState(false);
       return;
     }
     tbody.innerHTML = items.map(x=>`
@@ -103,6 +104,7 @@ async function renderPreferences(){
         </td>
       </tr>
     `).join('');
+    setReviewAvailabilityState(true);
     return;
   }
 
@@ -120,6 +122,65 @@ async function renderPreferences(){
       </td>
     </tr>
   `).join('');
+}
+// --- Review Availability guard (block if no prefs) ---
+async function countServerPrefs() {
+  try {
+    const r = await fetch('api/list_preferences.php', { headers:{'Accept':'application/json'} });
+    if (!r.ok) return 0;
+    const rows = await r.json();
+    return Array.isArray(rows) ? rows.length : 0;
+  } catch { return 0; }
+}
+
+// keep these in module scope so renderPreferences can update the state
+let _lastPrefCount = 0;
+function setReviewAvailabilityState(hasAny) {
+  const btn = document.getElementById('review-availability');
+  if (!btn) return;
+
+  _lastPrefCount = hasAny ? 1 : 0;
+
+  // disable visuals & semantics
+  if (!hasAny) {
+    btn.setAttribute('aria-disabled', 'true');
+    btn.classList.add('btn-disabled');       // optional class for styling if you have it
+    // keep href for right-click copy, but block click below
+  } else {
+    btn.removeAttribute('aria-disabled');
+    btn.classList.remove('btn-disabled');
+  }
+}
+
+function initReviewAvailabilityGuard() {
+  const btn = document.getElementById('review-availability');
+  if (!btn) return;
+
+  // Click interception
+  btn.addEventListener('click', async (e) => {
+    // quick localStorage check first
+    const localCount = (Array.isArray(PREFS.get()) ? PREFS.get().length : 0);
+    if (localCount > 0 || _lastPrefCount > 0) return; // allow
+
+    e.preventDefault();
+
+    // confirm with server (covers logged-in users using DB-backed prefs)
+    const serverCount = await countServerPrefs();
+    if (serverCount > 0) {
+      // allow now
+      location.href = btn.getAttribute('href') || 'available.html';
+      return;
+    }
+
+    alert('You have no preferences yet. Add some showtimes first on the show page.');
+  }, { passive:false });
+
+  // Initial state from server+local
+  (async () => {
+    const serverCount = await countServerPrefs();
+    const localCount  = Array.isArray(PREFS.get()) ? PREFS.get().length : 0;
+    setReviewAvailabilityState( (serverCount + localCount) > 0 );
+  })();
 }
 
 async function removePref(id){
@@ -147,9 +208,102 @@ async function getCurrentUser(){
   }catch{ return { authenticated:false }; }
 }
 
-// available.html – availability table (DB with fallback)
+/* =========================================
+   LIVE VALIDATION HELPERS (no framework)
+   ========================================= */
+function applyBuyerFieldConstraints() {
+  const nameEl  = document.getElementById('buyer-name');
+  const phoneEl = document.getElementById('buyer-phone');
+  const emailEl = document.getElementById('buyer-email');
+  if (!nameEl || !phoneEl || !emailEl) return;
+
+  // Safe, browser-compatible constraints
+  nameEl.setAttribute('required', 'true');
+  nameEl.setAttribute('minlength', '2');
+  nameEl.setAttribute('maxlength', '50');
+  nameEl.setAttribute('autocomplete', 'name');
+
+  phoneEl.setAttribute('required', 'true');
+  phoneEl.setAttribute('inputmode', 'tel');
+  phoneEl.setAttribute('autocomplete', 'tel');
+  phoneEl.setAttribute('pattern', '^[0-9()+\\- ]{7,20}$'); // escape hyphen
+
+  emailEl.setAttribute('required', 'true');
+  // keep existing type if already email; otherwise enforce
+  if (emailEl.getAttribute('type') !== 'email') emailEl.setAttribute('type', 'email');
+  emailEl.setAttribute('autocomplete', 'email');
+}
+
+function attachLiveValidationForBuyerForm() {
+  const nameEl  = document.getElementById('buyer-name');
+  const phoneEl = document.getElementById('buyer-phone');
+  const emailEl = document.getElementById('buyer-email');
+
+  if (!nameEl || !phoneEl || !emailEl) return;
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/; // lenient & practical
+  const nameOK  = v => v.trim().length >= 2;
+  const phoneOK = v => /^[0-9()+\- ]{7,20}$/.test(v.trim());
+  const emailOK = v => emailRegex.test(v.trim());
+
+  function validateName()  { const ok = nameOK(nameEl.value);  nameEl.setCustomValidity(ok ? '' : 'Please enter at least 2 characters.'); return ok; }
+  function validatePhone() { const ok = phoneOK(phoneEl.value); phoneEl.setCustomValidity(ok ? '' : 'Use digits, spaces, +, ( ), or - (7–20 characters).'); return ok; }
+  function validateEmail() {
+    // Trim in-place so the DOM shows the corrected value
+    emailEl.value = emailEl.value.trim().toLowerCase();
+    const ok = emailOK(emailEl.value);
+    emailEl.setCustomValidity(ok ? '' : 'Please enter a valid email (e.g., name@site.com).');
+    return ok;
+  }
+
+  nameEl.addEventListener('input',  () => validateName()  && nameEl.reportValidity());
+  phoneEl.addEventListener('input', () => validatePhone() && phoneEl.reportValidity());
+  emailEl.addEventListener('input', () => validateEmail() && emailEl.reportValidity());
+
+  [nameEl, phoneEl, emailEl].forEach(el => el.addEventListener('blur', () => el.reportValidity()));
+
+  // Final guard on submit (bootAvailable already calls reportValidity, this ensures we trim first)
+  const form = document.querySelector('#final-form');
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      const ok = validateName() & validatePhone() & validateEmail(); // bitwise & to run all
+      if (!ok) { e.preventDefault(); [nameEl, phoneEl, emailEl].forEach(el => el.reportValidity()); }
+    }, { once: true }); // only attach once
+  }
+}
+
+
+// Optional: register/create-account page live validation
+function attachLiveValidationForRegisterForm() {
+  const nameEl  = document.getElementById('reg-name');
+  const phoneEl = document.getElementById('reg-phone');
+  const emailEl = document.getElementById('reg-email');
+  const passEl  = document.getElementById('reg-pass');
+  if (!nameEl || !phoneEl || !emailEl || !passEl) return;
+
+  const nameOK  = v => v.trim().length >= 2;
+  const phoneOK = v => /^[0-9()+\- ]{7,20}$/.test(v.trim());
+  const emailOK = el => el.checkValidity();
+  const passOK  = v => v.length >= 6;
+
+  function bind(el, ok, msg) {
+    const run = () => { el.setCustomValidity(ok(el.value) ? '' : msg); el.reportValidity(); };
+    el.addEventListener('input', run);
+    el.addEventListener('blur', run);
+  }
+
+  bind(nameEl,  nameOK,  'Please enter at least 2 characters.');
+  bind(phoneEl, phoneOK, 'Use digits, spaces, +, (), or - (7–20 chars).');
+  bind(emailEl, _ => emailOK(emailEl), 'Please enter a valid email.');
+  bind(passEl,  passOK,  'Password must be at least 6 characters.');
+}
+
+/* =========================================
+   available.html – availability table
+   ========================================= */
 window.bootAvailable = async function bootAvailable(){
   console.log('[bootAvailable] start');
+  try { sessionStorage.removeItem('tickitnow_last_booking'); } catch {}
   const tbody = document.querySelector("#avail-body");
   const form  = document.querySelector("#final-form");
   const nameEl  = document.getElementById('buyer-name');
@@ -157,8 +311,12 @@ window.bootAvailable = async function bootAvailable(){
   const emailEl = document.getElementById('buyer-email');
   const noteEl  = document.getElementById('buyer-note');
   const hintEl  = document.getElementById('buyer-hint');
-
   if(!tbody || !form){ console.error('missing form/table'); return; }
+// At start of bootAvailable()
+// try { sessionStorage.removeItem('tickitnow_last_booking'); } catch {}
+  // Apply constraints & live validation immediately
+  applyBuyerFieldConstraints();
+  attachLiveValidationForBuyerForm();
 
   // 1) Get current user for prefill
   const me = await getCurrentUser(); // {authenticated, name, email, phone}
@@ -173,7 +331,7 @@ window.bootAvailable = async function bootAvailable(){
     hintEl.textContent = 'Not signed in — you can fill these now, but you’ll be asked to log in or create an account before confirming.';
   }
 
-  // 2) Load rows (your existing logic, unchanged except logs)
+  // 2) Load rows (your existing logic)
   let rows = [];
   try{
     const r = await fetch('api/list_available.php', { headers:{'Accept':'application/json'} });
@@ -222,132 +380,150 @@ window.bootAvailable = async function bootAvailable(){
       </tr>`;
   }).join('');
 
-  // 3) Submit: require auth; prefill if logged in; otherwise bounce to Account
+  // 3) Submit
   form.addEventListener('submit', async (e)=>{
+    e.preventDefault(); // make sure we always stop the native navigation
+  
     const selectedIds = [...document.querySelectorAll('input[name="select_item_ids"]:checked')].map(x=>x.value);
-    if(!selectedIds.length){ e.preventDefault(); alert('Please select at least one available booking.'); return; }
-
-    // Basic field validation
-    if(!nameEl.reportValidity() || !phoneEl.reportValidity() || !emailEl.reportValidity()){
-      e.preventDefault(); return;
-    }
-
-    const chosen = rows.filter(r => selectedIds.includes(String(r.id)));
-
-    // If NOT authenticated -> stash draft & redirect to Account (then back)
-    if(!me.authenticated){
-      e.preventDefault();
-      sessionStorage.setItem('tickitnow_pending_booking', JSON.stringify({
-        when: new Date().toISOString(),
-        buyer: {
-          name: nameEl.value.trim(),
-          phone: phoneEl.value.trim(),
-          email: emailEl.value.trim(),
-          note: noteEl.value.trim()
-        },
-        items: chosen
-      }));
-      // send them to account, and return to available.html after login
-      location.href = 'account.html?return=' + encodeURIComponent('available.html');
+    if(!selectedIds.length){ alert('Please select at least one available booking.'); return; }
+    if(!nameEl.reportValidity() || !phoneEl.reportValidity() || !emailEl.reportValidity()){ return; }
+  
+    // ... fetch to api/confirm_selection.php ...
+  
+    const resp = await fetch('api/confirm_selection.php', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        select_item_ids: selectedIds,
+        buyer_name:  nameEl.value.trim(),
+        buyer_phone: phoneEl.value.trim(),
+        buyer_email: emailEl.value.trim(),
+        buyer_note:  noteEl.value.trim()
+      })
+    });
+  
+    let json;
+    try { json = await resp.json(); } catch { json = null; }
+    if(!resp.ok || !json || json.error){
+      console.error('Confirm error:', json || '(no JSON)');
+      alert((json && json.error) || 'Failed to confirm selection');
       return;
     }
-
-    // Authenticated path: proceed (client-side demo confirm)
-// Authenticated path: send to server, then show confirmation
-e.preventDefault();
-
-const payload = {
-  select_item_ids: selectedIds,             // array of preference_items.id
-  buyer_name:  nameEl.value.trim(),
-  buyer_phone: phoneEl.value.trim(),
-  buyer_email: emailEl.value.trim(),
-  buyer_note:  noteEl.value.trim()
-};
-
-const resp = await fetch('api/confirm_selection.php', {
-  method:'POST',
-  headers:{'Content-Type':'application/json'},
-  body: JSON.stringify(payload)
-});
-const json = await resp.json();
-if(!resp.ok || json.error){
-  alert(json.error || 'Failed to confirm selection');
-  return;
-}
-
-// Save for confirmation page display
-sessionStorage.setItem("tickitnow_last_booking", JSON.stringify({
-  when: new Date().toISOString(),
-  booking_ref: json.booking_ref,
-  buyer: json.buyer,
-  total: json.total,
-  items: json.items.map(x=>({
-    show_id: x.show_id,
-    venue_name: x.venue_name,
-    start_at: x.start_at,
-    ticket_class: x.ticket_class,
-    qty: x.qty,
-    unit_price: x.price
-  }))
-}));
-location.href = 'confirmation.html';
+  
+    // --- Save confirmation payload ---
+    try {
+      sessionStorage.setItem("tickitnow_last_booking", JSON.stringify({
+        when: new Date().toISOString(),
+        booking_ref: json.booking_ref,
+        buyer: json.buyer,
+        total: json.total,
+        items: (json.items||[]).map(x=>({
+          show_id: x.show_id,
+          venue_name: x.venue_name,
+          start_at: x.start_at,
+          ticket_class: x.ticket_class,
+          qty: x.qty,
+          unit_price: x.unit_price,  // <- from server
+          price: x.unit_price
+        }))
+      }));
+    } catch (e) {
+      console.error('Failed to write sessionStorage:', e);
+    }
+  
+    // Clear preferences after a successful booking
+    if (window.PREFS?.clear) { try { PREFS.clear(); } catch {} }
+  
+    // Navigate with a cache-buster + use replace() to avoid stale back nav
+    location.replace('confirmation.html?bref=' + encodeURIComponent(json.booking_ref) + '&t=' + Date.now());
   });
 };
 
 // confirmation.html – read session data and show summary
-function bootConfirm(){
-  const data = sessionStorage.getItem("tickitnow_last_booking");
+window.bootConfirm = function bootConfirm(){
+  console.log('[bootConfirm] start');
   const target = document.querySelector("#confirm-body");
-  if (!target) return;
+  if (!target) { console.error('[bootConfirm] #confirm-body missing'); return; }
 
-  if (!data){
-    target.innerHTML = `<div class="meta">No booking found. Go to <a href="shows.html">Browse Shows</a>.</div>`;
-    return;
-  }
-  const obj = JSON.parse(data);
-  const total = obj.total ?? obj.items.reduce((s,x)=> s + (x.qty||2) * (x.unit_price||0), 0);
+  function render(){
+    let data = null;
+    try { data = sessionStorage.getItem("tickitnow_last_booking"); } catch {}
+    if (!data){
+      target.innerHTML = `<div class="card"><div class="card-body">
+        <p class="meta">No booking found. Go to <a href="shows.html">Browse Shows</a>.</p>
+      </div></div>`;
+      return;
+    }
+    let obj;
+    try { obj = JSON.parse(data); } catch { obj = null; }
+    if (!obj){
+      target.innerHTML = `<div class="card"><div class="card-body">
+        <p class="meta">Could not read booking data.</p>
+      </div></div>`;
+      return;
+    }
 
-  target.innerHTML = `
-    <div class="card"><div class="card-body">
-      <h2>🎉 Booking Confirmed</h2>
-      <p class="meta">Reference: <strong>${obj.booking_ref || '(pending)'}</strong></p>
-      <p class="meta">Booked at ${new Date(obj.when).toLocaleString()}</p>
+    const total = obj.total ?? obj.items.reduce((s,x)=> s + (x.qty||2) * (x.unit_price||0), 0);
 
-      ${obj.buyer ? `
-      <div class="note-box" style="margin:10px 0">
-        <div><strong>Buyer:</strong> ${obj.buyer.name || ''}</div>
-        <div class="meta">Phone: ${obj.buyer.phone || '-'} • Email: ${obj.buyer.email || '-'}</div>
-        ${obj.buyer.note ? `<div class="meta">Note: ${obj.buyer.note}</div>` : ''}
-      </div>
-    ` : '' }
+    target.innerHTML = `
+      <div class="card"><div class="card-body">
+        <h2>🎉 Booking Confirmed</h2>
+        <p class="meta">Reference: <strong>${obj.booking_ref || '(pending)'}</strong></p>
+        <p class="meta">Booked at ${new Date(obj.when).toLocaleString()}</p>
 
+        ${obj.buyer ? `
+        <div class="note-box" style="margin:10px 0">
+          <div><strong>Buyer:</strong> ${obj.buyer.name || ''}</div>
+          <div class="meta">Phone: ${obj.buyer.phone || '-'} • Email: ${obj.buyer.email || '-'}</div>
+          ${obj.buyer.note ? `<div class="meta">Note: ${obj.buyer.note}</div>` : ''}
+        </div>` : ''}
 
-      <table class="table" style="margin-top:10px">
-        <thead><tr><th>Show#</th><th>When</th><th>Venue</th><th>Class</th><th>Qty</th><th>Price</th></tr></thead>
-        <tbody>
-          ${obj.items.map(x=>`
-            <tr>
-              <td>${x.show_id}</td>
-              <td>${x.start_at}</td>
-              <td>${x.venue_name}</td>
-              <td>${x.ticket_class}</td>
-              <td>${x.qty}</td>
-              <td>$${Number(x.unit_price||x.price||0).toFixed(2)}</td>
-            </tr>
-          `).join("")}
-        </tbody>
-      </table>
-      <div class="flex space-between" style="margin-top:10px">
-        <strong>Total</strong>
-        <strong>$${Number(total).toFixed(2)}</strong>
-      </div>
-      <div class="flex" style="margin-top:16px">
+        <table class="table" style="margin-top:10px">
+          <thead><tr><th>Show#</th><th>When</th><th>Venue</th><th>Class</th><th>Qty</th><th>Price</th></tr></thead>
+          <tbody>
+            ${(obj.items||[]).map(x=>`
+              <tr>
+                <td>${x.show_id}</td>
+                <td>${x.start_at}</td>
+                <td>${x.venue_name}</td>
+                <td>${x.ticket_class}</td>
+                <td>${x.qty}</td>
+                <td>$${Number(x.unit_price||x.price||0).toFixed(2)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+
+        <div class="flex space-between" style="margin-top:10px">
+          <strong>Total</strong>
+          <strong>$${Number(total).toFixed(2)}</strong>
+        </div>
+        <div class="flex" style="margin-top:16px; gap:10px">
+        ${obj.booking_ref ? `
+          <a class="btn" href="receipt.php?ref=${encodeURIComponent(obj.booking_ref)}" target="_blank" rel="noopener">
+            View receipt
+          </a>
+        ` : ''}
         <a class="btn primary" href="shows.html">Book More</a>
         <a class="btn ghost" href="index.html">Home</a>
       </div>
-    </div></div>
-  `;
-}
+      </div></div>
+    `;
+  }
+
+  // initial render + handle bfcache restores
+  render();
+  window.addEventListener('pageshow', () => {
+    console.log('[bootConfirm] pageshow — re-render');
+    render();
+    // optional: clean URL (remove cache-buster)
+    try {
+      const url = new URL(location.href);
+      if (url.searchParams.has('t')) { url.searchParams.delete('t'); history.replaceState(null,'',url.toString()); }
+    } catch {}
+  });
+};
+
 
 /* ===== Featured Movies Carousel (no libs) ===== */
 (function(){
@@ -667,3 +843,167 @@ function populateQuickSearchDate() {
   }
 }
 document.addEventListener('DOMContentLoaded', populateQuickSearchDate);
+
+document.addEventListener('DOMContentLoaded', () => {
+  initReviewAvailabilityGuard();
+});
+
+// Highlight the current page link in the navbar
+document.addEventListener('DOMContentLoaded', () => {
+  const current = location.pathname.split('/').pop(); // e.g. "shows.html"
+  document.querySelectorAll('.nav .links a').forEach(a => {
+    const href = a.getAttribute('href');
+    if (href && href.endsWith(current)) {
+      a.classList.add('active');
+    } else {
+      a.classList.remove('active');
+    }
+  });
+});
+
+
+// =======================
+// Account page bootstrap
+// =======================
+window.bootAccount = async function bootAccount(){
+  const pane = document.getElementById('account-pane');
+  if (!pane) { console.error('[bootAccount] #account-pane not found'); return; }
+
+  // tiny helpers
+  const $ = sel => document.querySelector(sel);
+  const money = n => '$' + Number(n||0).toFixed(2);
+  const dt = s => {
+    try { return new Date((s||'').replace?.(' ','T') || s).toLocaleString(); }
+    catch { return s || ''; }
+  };
+
+  // 1) Who am I?
+  let me = { authenticated:false };
+  try{
+    const r = await fetch('api/me.php', { headers:{'Accept':'application/json'} });
+    me = r.ok ? await r.json() : { authenticated:false };
+  }catch(e){
+    console.warn('[bootAccount] me.php failed', e);
+  }
+
+  // 2) If not logged in → show CTA
+  if (!me.authenticated){
+    pane.innerHTML = `
+      <div class="card">
+        <div class="card-body" style="text-align:center">
+          <h2>Your Account</h2>
+          <p class="meta">Log in to view your details and order history.</p>
+          <div class="flex" style="justify-content:center;gap:12px;margin-top:12px">
+            <a href="login.html" class="btn primary">Log In</a>
+            <a href="register.html" class="btn ghost">Create Account</a>
+          </div>
+        </div>
+      </div>
+    `;
+    // If you wired this helper elsewhere, this call is harmless; otherwise it no-ops.
+    if (typeof attachLiveValidationForRegisterForm === 'function') {
+      attachLiveValidationForRegisterForm();
+    }
+    return;
+  }
+
+  // 3) Logged in → scaffold profile + history shell
+  pane.innerHTML = `
+    <div class="grid" style="grid-template-columns: 1fr 1.5fr; gap:16px">
+      <div class="card"><div class="card-body">
+        <h2>Profile</h2>
+        <div class="meta" style="margin-top:8px">Name</div>
+        <div>${me.name || '-'}</div>
+        <div class="meta" style="margin-top:8px">Email</div>
+        <div>${me.email || '-'}</div>
+        <div class="meta" style="margin-top:8px">Phone</div>
+        <div>${me.phone || '-'}</div>
+        <div class="flex" style="gap:10px;margin-top:14px">
+          <a class="btn ghost" href="index.html">Home</a>
+          <a class="btn danger" href="api/logout.php">Log out</a>
+        </div>
+      </div></div>
+
+      <div class="card"><div class="card-body">
+        <h2>Order History</h2>
+        <div id="orders-placeholder" class="meta" style="margin-top:8px">Loading…</div>
+        <table class="table" style="margin-top:10px; display:none">
+          <thead>
+            <tr>
+              <th>Ref</th>
+              <th>Date</th>
+              <th>Total</th>
+              <th>Items</th>
+              <th class="right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="order-body"></tbody>
+        </table>
+      </div></div>
+    </div>
+  `;
+
+  // 4) Fetch order history
+  let orders = [];
+  try{
+    const r = await fetch('api/order_history.php', { headers:{'Accept':'application/json'} });
+    if (r.ok) {
+      const j = await r.json();
+      orders = Array.isArray(j.orders) ? j.orders : [];
+    } else {
+      console.warn('[bootAccount] order_history.php HTTP', r.status);
+    }
+  }catch(e){
+    console.warn('[bootAccount] order_history failed', e);
+  }
+
+  const placeholder = $('#orders-placeholder');
+  const table = pane.querySelector('table');
+  const body = $('#order-body');
+
+  if (!orders.length){
+    placeholder.textContent = 'No orders yet.';
+    table.style.display = 'none';
+    return;
+  }
+
+  placeholder.style.display = 'none';
+  table.style.display = '';
+
+  body.innerHTML = orders.map(o=>{
+    const ref = o.booking_ref || ('#' + (o.booking_id ?? '—'));
+    const when = dt(o.created_at || o.booked_at);
+    const total = money(o.total);
+    const items = Array.isArray(o.items) ? o.items : [];
+
+    const itemsHtml = items.length
+      ? items.map(x => `
+          <div class="meta">
+            ${x.tickets ?? x.qty ?? 0} ticket(s)
+            ${typeof x.price_each !== 'undefined' || typeof x.unit_price !== 'undefined'
+              ? ` × $${Number((x.price_each ?? x.unit_price) || 0).toFixed(2)}`
+              : '' }
+            ${x.ticket_class ? ` • ${x.ticket_class}` : ''}
+            ${x.venue_name ? ` • ${x.venue_name}` : ''}
+            ${x.start_at ? ` • ${dt(x.start_at)}` : ''}
+          </div>
+        `).join('')
+      : '<span class="meta">No line items</span>';
+
+    const receiptHref = o.booking_ref
+      ? `receipt.php?ref=${encodeURIComponent(o.booking_ref)}`
+      : (o.booking_id ? `receipt.php?id=${encodeURIComponent(o.booking_id)}` : null);
+
+    return `
+      <tr>
+        <td>${ref}</td>
+        <td>${when}</td>
+        <td>${total}</td>
+        <td>${itemsHtml}</td>
+        <td class="right">
+          ${receiptHref ? `<a class="btn btn-sm ghost" href="${receiptHref}" target="_blank" rel="noopener">Receipt</a>` : ''}
+        </td>
+      </tr>
+    `;
+  }).join('');
+};
