@@ -1,4 +1,4 @@
-
+console.log('[bootAvailable] start');
 /* TickItNow – UI-only behavior (no AJAX). Uses localStorage for preferences. */
 const LS_KEY = "tickitnow_prefs_v1";
 const PREFS = {
@@ -15,7 +15,6 @@ const PREFS = {
   },
   remove(id, start_at){
     let items = PREFS.get().filter(x => !(x.id===id && x.start_at===start_at));
-    // re-rank
     items = items.map((x,i)=>({...x, rank_pos:i+1}));
     PREFS.set(items);
   },
@@ -28,10 +27,9 @@ const PREFS = {
     const temp = items[idx];
     items[idx] = items[swapIdx];
     items[swapIdx] = temp;
-    // re-number ranks
     items.forEach((x,i)=>x.rank_pos=i+1);
     PREFS.set(items);
-    renderPreferences && renderPreferences(); // if on that page
+    renderPreferences && renderPreferences();
   },
   clear(){ localStorage.removeItem(LS_KEY); }
 };
@@ -41,6 +39,10 @@ function qall(q){ return [...document.querySelectorAll(q)]; }
 function fmtDateTime(iso){
   try{ return new Date(iso).toLocaleString(); } catch{ return iso; }
 }
+function fmtDateTimeLocal(isoLocal){
+  if(!isoLocal) return '';
+  return new Date(isoLocal).toLocaleString();
+}
 
 // ---------- Page-specific bootstraps ----------
 
@@ -49,7 +51,7 @@ function bootShows(){
   const shows = [
     {id:1,title:"Fight Club",genre:"Action",rating:"R",poster:"assets/posters/fightclub.jpeg"},
     {id:2,title:"The Wolf of Wall Street",genre:"Biography",rating:"R",poster:"assets/posters/wolf.jpeg"},
-    {id:3,title:"Interstellar",genre:"Sci‑Fi",rating:"PG13",poster:"assets/posters/interstellar.jpeg"},
+    {id:3,title:"Interstellar",genre:"Sci-Fi",rating:"PG13",poster:"assets/posters/interstellar.jpeg"},
     {id:4,title:"Spiderman",genre:"Action",rating:"PG13",poster:"assets/posters/spiderman.jpeg"},
     {id:5,title:"Hacksaw Ridge",genre:"Sci-Fi",rating:"PG13",poster:"assets/posters/hacksaw.jpeg"}
   ];
@@ -70,8 +72,6 @@ function bootShows(){
   `).join("");
 }
 
-
-// preferences.html – ranked list
 // preferences.html – load from DB first, fall back to localStorage
 async function renderPreferences(){
   const tbody = document.querySelector("#prefs-body");
@@ -83,14 +83,12 @@ async function renderPreferences(){
     if(r.ok) rows = await r.json();
   }catch(e){ /* ignore */ }
 
-  // Fallback to localStorage only if server is empty (keep your old behavior)
   if(!rows.length){
     const items = PREFS.get();
     if(!items.length){
       tbody.innerHTML = `<tr><td colspan="6" class="meta">No preferences yet. Go to <a href="shows.html">Browse Shows</a>.</td></tr>`;
       return;
     }
-    // local format
     tbody.innerHTML = items.map(x=>`
       <tr>
         <td><span class="badge">#${x.rank_pos}</span></td>
@@ -108,7 +106,6 @@ async function renderPreferences(){
     return;
   }
 
-  // Server rows
   tbody.innerHTML = rows.map((x,i)=>`
     <tr>
       <td><span class="badge">#${i+1}</span></td>
@@ -125,106 +122,224 @@ async function renderPreferences(){
   `).join('');
 }
 
-function fmtDateTimeLocal(isoLocal){
-  // isoLocal like "2025-11-05T19:00:00" (no Z) -> treat as LOCAL, not UTC
-  if(!isoLocal) return '';
-  const d = new Date(isoLocal); // parsed as local time because no Z
-  return d.toLocaleString();
-}
-
 async function removePref(id){
   const form = new URLSearchParams(); form.set('id', id);
   const r = await fetch('api/remove_preference.php', { method:'POST', body:form });
   if(r.ok){ await renderPreferences(); } else { alert('Failed to remove'); }
 }
-
 async function clearAllPrefs(){
   if(!confirm('Clear all preferences?')) return;
   const r = await fetch('api/clear_preferences.php', { method:'POST' });
   if(r.ok){ await renderPreferences(); } else { alert('Failed to clear'); }
 }
-
 async function movePref(id, dir){
   const form = new URLSearchParams(); form.set('id', id); form.set('dir', dir);
   const r = await fetch('api/move_preference.php', { method:'POST', body:form });
   if(r.ok){ await renderPreferences(); } else { alert('Failed to move'); }
 }
-// available.html – simulate availability & build form for final selection
-function bootAvailable(){
-  const list = PREFS.get();
-  const tbody = qsel("#avail-body");
-  if (!tbody) return;
-  if (!list.length){
+
+// --- auth helper: get current user from server (or unauthenticated) ---
+async function getCurrentUser(){
+  try{
+    const r = await fetch('api/me.php', { headers:{'Accept':'application/json'} });
+    if(!r.ok) return { authenticated:false };
+    return await r.json(); // {authenticated, name, email, phone}
+  }catch{ return { authenticated:false }; }
+}
+
+// available.html – availability table (DB with fallback)
+window.bootAvailable = async function bootAvailable(){
+  console.log('[bootAvailable] start');
+  const tbody = document.querySelector("#avail-body");
+  const form  = document.querySelector("#final-form");
+  const nameEl  = document.getElementById('buyer-name');
+  const phoneEl = document.getElementById('buyer-phone');
+  const emailEl = document.getElementById('buyer-email');
+  const noteEl  = document.getElementById('buyer-note');
+  const hintEl  = document.getElementById('buyer-hint');
+
+  if(!tbody || !form){ console.error('missing form/table'); return; }
+
+  // 1) Get current user for prefill
+  const me = await getCurrentUser(); // {authenticated, name, email, phone}
+  if(me.authenticated){
+    if(me.name)  nameEl.value  = me.name;
+    if(me.phone) phoneEl.value = me.phone;
+    if(me.email) emailEl.value = me.email;
+    hintEl.style.display = 'block';
+    hintEl.textContent = 'You are signed in. You can edit these details for this booking if needed.';
+  }else{
+    hintEl.style.display = 'block';
+    hintEl.textContent = 'Not signed in — you can fill these now, but you’ll be asked to log in or create an account before confirming.';
+  }
+
+  // 2) Load rows (your existing logic, unchanged except logs)
+  let rows = [];
+  try{
+    const r = await fetch('api/list_available.php', { headers:{'Accept':'application/json'} });
+    rows = r.ok ? await r.json() : [];
+  }catch{}
+  if((!Array.isArray(rows) || rows.length === 0) && window.PREFS){
+    const items = PREFS.get();
+    if (items && items.length){
+      rows = items.map((x,i)=>({
+        id: i+1,
+        rank: x.rank_pos || (i+1),
+        show_id: x.id,
+        show_title: x.title || ('Show #' + x.id),
+        venue_name: x.venue,
+        start_at_iso: (x.start_at || '').replace(' ', 'T'),
+        ticket_class: x.ticket_class || 'Standard',
+        qty: x.tickets || 2,
+        price: x.price || 0,
+        available_qty: 999,
+        is_available: 1
+      }));
+    }
+  }
+  if(!Array.isArray(rows) || rows.length === 0){
     tbody.innerHTML = `<tr><td colspan="6" class="meta">No items in preferences.</td></tr>`;
     return;
   }
-  // Simple deterministic availability: even minutes = available
-  const rows = list.map(x=>{
-    const dt = new Date(x.start_at);
-    const available = (dt.getMinutes() % 2 === 0);
-    return {...x, available}
-  });
-  tbody.innerHTML = rows.map(x=>`
-    <tr>
-      <td><span class="badge">#${x.rank_pos}</span></td>
-      <td>${x.title}<div class="meta">${x.venue}</div></td>
-      <td>${fmtDateTime(x.start_at)}</td>
-      <td>${x.tickets || 2}</td>
-      <td>${x.available ? '<span class="badge" style="border-color:#204f36;color:#7ae2a0;background:#0a2217">Available</span>' :
-                           '<span class="badge" style="border-color:#44202d;color:#f7a5b2;background:#220b12">Not Available</span>'}</td>
-      <td class="right">
-        ${x.available ? `<input type="checkbox" name="select_item_ids" value="${x.id}|${x.start_at}">` : ''}
-      </td>
-    </tr>
-  `).join("");
-  // client-side form validation
-  const form = qsel("#final-form");
-  form?.addEventListener("submit", (e)=>{
-    const any = qall('input[name="select_item_ids"]:checked').length>0;
-    if (!any){ e.preventDefault(); alert("Please select at least one available booking."); }
-    else{
-      // store a mock "last booking" for confirmation page
-      const chosen = rows.filter(x=>{
-        const key = `${x.id}|${x.start_at}`;
-        return !!qsel(`input[value="${key}"]`)?.checked;
-      });
-      sessionStorage.setItem("tickitnow_last_booking", JSON.stringify({when:new Date().toISOString(), items:chosen}));
+  tbody.innerHTML = rows.map((x,i)=>{
+    const available = !!Number(x.is_available);
+    const statusBadge = available
+      ? `<span class="badge" style="border-color:#204f36;color:#7ae2a0;background:#0a2217">Available</span>`
+      : `<span class="badge" style="border-color:#44202d;color:#f7a5b2;background:#220b12">Not Available</span>`;
+    const checkbox = available
+      ? `<input type="checkbox" name="select_item_ids" value="${x.id}">`
+      : `<input type="checkbox" disabled title="Insufficient seats">`;
+    return `
+      <tr>
+        <td><span class="badge">#${x.rank || i+1}</span></td>
+        <td>${x.show_title || ('Show #' + x.show_id)}
+          <div class="meta">${x.venue_name}${x.ticket_class ? ' • ' + x.ticket_class : ''}</div>
+        </td>
+        <td>${fmtDateTimeLocal(x.start_at_iso)}</td>
+        <td>${x.qty}</td>
+        <td>${statusBadge} ${typeof x.available_qty!=="undefined" ? `<span class="meta" style="margin-left:6px">(Left: ${x.available_qty})</span>` : ''}</td>
+        <td class="right">${checkbox}</td>
+      </tr>`;
+  }).join('');
+
+  // 3) Submit: require auth; prefill if logged in; otherwise bounce to Account
+  form.addEventListener('submit', async (e)=>{
+    const selectedIds = [...document.querySelectorAll('input[name="select_item_ids"]:checked')].map(x=>x.value);
+    if(!selectedIds.length){ e.preventDefault(); alert('Please select at least one available booking.'); return; }
+
+    // Basic field validation
+    if(!nameEl.reportValidity() || !phoneEl.reportValidity() || !emailEl.reportValidity()){
+      e.preventDefault(); return;
     }
-  });
+
+    const chosen = rows.filter(r => selectedIds.includes(String(r.id)));
+
+    // If NOT authenticated -> stash draft & redirect to Account (then back)
+    if(!me.authenticated){
+      e.preventDefault();
+      sessionStorage.setItem('tickitnow_pending_booking', JSON.stringify({
+        when: new Date().toISOString(),
+        buyer: {
+          name: nameEl.value.trim(),
+          phone: phoneEl.value.trim(),
+          email: emailEl.value.trim(),
+          note: noteEl.value.trim()
+        },
+        items: chosen
+      }));
+      // send them to account, and return to available.html after login
+      location.href = 'account.html?return=' + encodeURIComponent('available.html');
+      return;
+    }
+
+    // Authenticated path: proceed (client-side demo confirm)
+// Authenticated path: send to server, then show confirmation
+e.preventDefault();
+
+const payload = {
+  select_item_ids: selectedIds,             // array of preference_items.id
+  buyer_name:  nameEl.value.trim(),
+  buyer_phone: phoneEl.value.trim(),
+  buyer_email: emailEl.value.trim(),
+  buyer_note:  noteEl.value.trim()
+};
+
+const resp = await fetch('api/confirm_selection.php', {
+  method:'POST',
+  headers:{'Content-Type':'application/json'},
+  body: JSON.stringify(payload)
+});
+const json = await resp.json();
+if(!resp.ok || json.error){
+  alert(json.error || 'Failed to confirm selection');
+  return;
 }
+
+// Save for confirmation page display
+sessionStorage.setItem("tickitnow_last_booking", JSON.stringify({
+  when: new Date().toISOString(),
+  booking_ref: json.booking_ref,
+  buyer: json.buyer,
+  total: json.total,
+  items: json.items.map(x=>({
+    show_id: x.show_id,
+    venue_name: x.venue_name,
+    start_at: x.start_at,
+    ticket_class: x.ticket_class,
+    qty: x.qty,
+    unit_price: x.price
+  }))
+}));
+location.href = 'confirmation.html';
+  });
+};
 
 // confirmation.html – read session data and show summary
 function bootConfirm(){
   const data = sessionStorage.getItem("tickitnow_last_booking");
-  const target = qsel("#confirm-body");
+  const target = document.querySelector("#confirm-body");
   if (!target) return;
+
   if (!data){
     target.innerHTML = `<div class="meta">No booking found. Go to <a href="shows.html">Browse Shows</a>.</div>`;
     return;
   }
   const obj = JSON.parse(data);
-  const total = obj.items.reduce((s,x)=> s + (x.tickets||2) * (x.price||0), 0);
+  const total = obj.total ?? obj.items.reduce((s,x)=> s + (x.qty||2) * (x.unit_price||0), 0);
+
   target.innerHTML = `
     <div class="card"><div class="card-body">
       <h2>🎉 Booking Confirmed</h2>
-      <p class="meta">Booked at ${fmtDateTime(obj.when)}</p>
+      <p class="meta">Reference: <strong>${obj.booking_ref || '(pending)'}</strong></p>
+      <p class="meta">Booked at ${new Date(obj.when).toLocaleString()}</p>
+
+      ${obj.buyer ? `
+      <div class="note-box" style="margin:10px 0">
+        <div><strong>Buyer:</strong> ${obj.buyer.name || ''}</div>
+        <div class="meta">Phone: ${obj.buyer.phone || '-'} • Email: ${obj.buyer.email || '-'}</div>
+        ${obj.buyer.note ? `<div class="meta">Note: ${obj.buyer.note}</div>` : ''}
+      </div>
+    ` : '' }
+
+
       <table class="table" style="margin-top:10px">
-        <thead><tr><th>Show</th><th>When</th><th>Venue</th><th>Tickets</th><th>Price</th></tr></thead>
+        <thead><tr><th>Show#</th><th>When</th><th>Venue</th><th>Class</th><th>Qty</th><th>Price</th></tr></thead>
         <tbody>
           ${obj.items.map(x=>`
             <tr>
-              <td>${x.title}</td>
-              <td>${fmtDateTime(x.start_at)}</td>
-              <td>${x.venue}</td>
-              <td>${x.tickets||2}</td>
-              <td>$${Number(x.price||0).toFixed(2)}</td>
+              <td>${x.show_id}</td>
+              <td>${x.start_at}</td>
+              <td>${x.venue_name}</td>
+              <td>${x.ticket_class}</td>
+              <td>${x.qty}</td>
+              <td>$${Number(x.unit_price||x.price||0).toFixed(2)}</td>
             </tr>
           `).join("")}
         </tbody>
       </table>
       <div class="flex space-between" style="margin-top:10px">
         <strong>Total</strong>
-        <strong>$${total.toFixed(2)}</strong>
+        <strong>$${Number(total).toFixed(2)}</strong>
       </div>
       <div class="flex" style="margin-top:16px">
         <a class="btn primary" href="shows.html">Book More</a>
@@ -238,16 +353,15 @@ function bootConfirm(){
 (function(){
   const data = [
     { id:1, title:"Fight Club", blurb:"An underground fight club becomes something far darker.", img:"assets/posters/fightclub.jpeg" },
-    { id:2, title:"The Wolf of Wall Street",   blurb:"Greed, excess, and chaos on Wall Street.",            img:"assets/posters/wolf.jpeg" },
-    { id:3, title:"Interstellar",       blurb:"A journey through space to save humanity.",      img:"assets/posters/interstellar.jpeg" },
-    { id:4, title:"Spiderman",   blurb:"An ordinary teen discovers extraordinary power.",                img:"assets/posters/spiderman.jpeg" },
-    {id:5,title:"Hacksaw Ridge",blurb:"A medic’s courage turns the tide on the bloodiest battlefield." ,img:"assets/posters/hacksaw.jpeg"}
+    { id:2, title:"The Wolf of Wall Street", blurb:"Greed, excess, and chaos on Wall Street.", img:"assets/posters/wolf.jpeg" },
+    { id:3, title:"Interstellar", blurb:"A journey through space to save humanity.", img:"assets/posters/interstellar.jpeg" },
+    { id:4, title:"Spiderman", blurb:"An ordinary teen discovers extraordinary power.", img:"assets/posters/spiderman.jpeg" },
+    { id:5, title:"Hacksaw Ridge", blurb:"A medic’s courage turns the tide on the bloodiest battlefield.", img:"assets/posters/hacksaw.jpeg" }
   ];
 
   const track = document.getElementById('carousel-track');
-  if(!track) return; // only on home page
+  if(!track) return;
 
-  // Build slides
   track.innerHTML = data.map(d => `
     <article class="slide" role="group" aria-roledescription="slide" aria-label="${d.title}">
       <img src="${d.img}" alt="${d.title} poster">
@@ -262,7 +376,6 @@ function bootConfirm(){
     </article>
   `).join('');
 
-  // Dots
   const dotsWrap = document.getElementById('carousel-dots');
   dotsWrap.innerHTML = data.map((_,i)=>`<button aria-label="Go to slide ${i+1}" data-i="${i}"></button>`).join('');
 
@@ -277,46 +390,30 @@ function bootConfirm(){
     track.style.transform = `translateX(-${i*100}%)`;
     dots.forEach((d,idx)=> d.setAttribute('aria-current', idx===i ? 'true' : 'false'));
   }
-
   function next(){ go(i+1); }
   function prev(){ go(i-1); }
-
-  function start(){
-    stop();
-    timer = setInterval(()=>{ if(!hovering) next(); }, 4500);
-  }
+  function start(){ stop(); timer = setInterval(()=>{ if(!hovering) next(); }, 4500); }
   function stop(){ if(timer) clearInterval(timer); }
 
-  // Events
   nextBtn.addEventListener('click', ()=>{ next(); start(); });
   prevBtn.addEventListener('click', ()=>{ prev(); start(); });
   dots.forEach(d=> d.addEventListener('click', e=>{ go(+e.currentTarget.dataset.i); start(); }));
-
-  // Pause on hover
   track.addEventListener('mouseenter', ()=>{ hovering = true; });
   track.addEventListener('mouseleave', ()=>{ hovering = false; });
-
-  // Keyboard
   track.tabIndex = 0;
   track.addEventListener('keydown', e=>{
     if(e.key === 'ArrowRight') { next(); start(); }
     if(e.key === 'ArrowLeft')  { prev(); start(); }
   });
-
-  // Basic swipe (mobile)
   let sx=0, dx=0;
   track.addEventListener('touchstart', e=>{ sx = e.touches[0].clientX; dx = 0; }, {passive:true});
   track.addEventListener('touchmove',  e=>{ dx = e.touches[0].clientX - sx; }, {passive:true});
-  track.addEventListener('touchend',   ()=>{
-    if(Math.abs(dx) > 50){ dx < 0 ? next() : prev(); start(); }
-  });
+  track.addEventListener('touchend',   ()=>{ if(Math.abs(dx) > 50){ dx < 0 ? next() : prev(); start(); } });
 
-  // init
-  go(0);
-  start();
+  go(0); start();
 })();
 
-/* ===== Show page ===== */
+/* ===== Show page (DB-driven times) ===== */
 function toEmbed(url){
   if(!url) return "";
   try{
@@ -341,111 +438,107 @@ function bootShowDetails(){
   const qs  = new URLSearchParams(location.search);
   const preVenue = qs.get('venue');      // e.g. "pvr1"
   const preDate  = qs.get('date');       // "YYYY-MM-DD"
-
   const dateStrip = document.getElementById('date-strip');
   const venueList = document.getElementById('venue-list');
   if(!id || !dateStrip || !venueList) return;
 
-  // ----- MOVIE HEADER (unchanged) -----
+  // Header
   const MOVIES = {
-    1:{title:'Fight Club', genre:'Action', rating:'R',   duration:'2h 19m',
-       synopsis:'An underground fight club becomes something far darker.',
-       trailer_url:'https://www.youtube.com/watch?v=SUXWAEX2jlg'},
-    2:{title:'The Wolf of Wall Street', genre:'Biography', rating:'R', duration:'2h 59m',
-       synopsis:'Greed, excess, and chaos on Wall Street.',
-       trailer_url:'https://www.youtube.com/watch?v=iszwuX1AK6A'},
-    3:{title:'Interstellar', genre:'Sci-Fi', rating:'PG13', duration:'2h 49m',
-       synopsis:'A journey through space to save humanity.',
-       trailer_url:'https://www.youtube.com/watch?v=zSWdZVtXT7E'},
-    4:{title:'Spider-Man', genre:'Action', rating:'PG13', duration:'2h 10m',
-       synopsis:'An ordinary teen discovers extraordinary power.',
-       trailer_url:'https://www.youtube.com/watch?v=t06RUxPbp_c'},
-    5:{title:'Hacksaw Ridge', genre:'War', rating:'R', duration:'2h 19m',
-       synopsis:'A medic’s courage turns the tide on the bloodiest battlefield.',
-       trailer_url:'https://www.youtube.com/watch?v=s2-1hz1juBI'}
+    1:{title:'Fight Club', genre:'Action', rating:'R',   duration:'2h 19m', synopsis:'An underground fight club becomes something far darker.', trailer_url:'https://www.youtube.com/watch?v=SUXWAEX2jlg'},
+    2:{title:'The Wolf of Wall Street', genre:'Biography', rating:'R', duration:'2h 59m', synopsis:'Greed, excess, and chaos on Wall Street.', trailer_url:'https://www.youtube.com/watch?v=iszwuX1AK6A'},
+    3:{title:'Interstellar', genre:'Sci-Fi', rating:'PG13', duration:'2h 49m', synopsis:'A journey through space to save humanity.', trailer_url:'https://www.youtube.com/watch?v=zSWdZVtXT7E'},
+    4:{title:'Spider-Man', genre:'Action', rating:'PG13', duration:'2h 10m', synopsis:'An ordinary teen discovers extraordinary power.', trailer_url:'https://www.youtube.com/watch?v=t06RUxPbp_c'},
+    5:{title:'Hacksaw Ridge', genre:'War', rating:'R', duration:'2h 19m', synopsis:'A medic’s courage turns the tide on the bloodiest battlefield.', trailer_url:'https://www.youtube.com/watch?v=s2-1hz1juBI'}
   };
   const show = MOVIES[id] || {title:'Show', genre:'—', rating:'—', duration:'—', synopsis:'', trailer_url:''};
-  document.getElementById('show-title').textContent = show.title;
-  document.getElementById('show-meta').textContent  = `${show.genre} • ${show.duration} • Rated ${show.rating}`;
-  document.getElementById('show-synopsis').textContent = show.synopsis;
-  const iframe = document.getElementById('show-trailer');
-  const embed = toEmbed(show.trailer_url);
-  if(embed){ iframe.src = embed; } else { document.querySelector('.video-wrap').style.display='none'; }
+  qsel('#show-title').textContent = show.title;
+  qsel('#show-meta').textContent  = `${show.genre} • ${show.duration} • Rated ${show.rating}`;
+  qsel('#show-synopsis').textContent = show.synopsis;
+  const iframe = qsel('#show-trailer'); const embed = toEmbed(show.trailer_url);
+  if(embed){ iframe.src = embed; } else { qsel('.video-wrap').style.display='none'; }
 
-  // ----- DATES (5 days) -----
+  // Date pills (5 days) – LOCAL time
   function fmtLocalDate(d){
-    const y = d.getFullYear();
-    const m = String(d.getMonth()+1).padStart(2,'0');
-    const day = String(d.getDate()).padStart(2,'0');
-    return `${y}-${m}-${day}`; // YYYY-MM-DD in LOCAL time
+    const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
   }
-  
   const days = [...Array(5)].map((_,i)=>{
-    const d = new Date();
-    d.setHours(0,0,0,0);     // normalize to midnight local
-    d.setDate(d.getDate()+i);
-    return {
-      key: fmtLocalDate(d),
-      dow: d.toLocaleDateString(undefined,{weekday:'short'}),
-      day: d.getDate(),
-      mon: d.toLocaleDateString(undefined,{month:'short'})
-    };
+    const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+i);
+    return { key: fmtLocalDate(d), dow: d.toLocaleDateString(undefined,{weekday:'short'}), day: d.getDate(), mon: d.toLocaleDateString(undefined,{month:'short'}) };
   });
-
-  // ----- VENUES (Singapore, keep your IDs) -----
-  const venues = [
-    { id:'inox', name:'Orchard Cineplex A',   distance:'2.5 km', cancel:true },
-    { id:'pvr1', name:'Marina Theatre Hall 2',distance:'2.6 km', cancel:true },
-    { id:'pvr2', name:'Jewel Cinema 5',       distance:'3.8 km', cancel:true },
-    { id:'pvr3', name:'Tampines Stage 1',     distance:'5.8 km', cancel:true },
-  ];
-  const baseTimes = ['09:55 PM','10:25 PM','10:55 PM','11:25 PM'];
-
-  // build per-day schedule (demo)
-  const byDate = {};
-  days.forEach((d,i)=>{
-    byDate[d.key] = venues.map((v,vi)=>({
-      ...v,
-      times: baseTimes.map((t,ti)=>{
-        const [hm,ampm]=t.split(' '); let [h,m]=hm.split(':').map(Number);
-        m=(m+((i+vi+ti)%3)*5)%60; if(m<10)m='0'+m;
-        return `${h}:${m} ${ampm}`;
-      })
-    }));
-  });
-
-  // ----- Render date pills -----
   dateStrip.innerHTML = days.map((d,i)=>`
     <button class="date-pill ${i===0?'active':''}" data-date="${d.key}">
       <small>${d.dow} • ${d.mon}</small><strong>${d.day}</strong>
-    </button>
-  `).join('');
-
-  // initial selected date (URL preselect if given)
+    </button>`).join('');
   let selectedDate = days[0].key;
   if (preDate && days.some(d=>d.key===preDate)) {
     selectedDate = preDate;
-    // visually mark the pill
-    requestAnimationFrame(()=>{
-      [...dateStrip.children].forEach((b,idx)=> b.classList.toggle('active', days[idx].key===preDate));
-    });
+    requestAnimationFrame(()=>{ [...dateStrip.children].forEach((b,idx)=> b.classList.toggle('active', days[idx].key===preDate)); });
   }
 
-  // render venues for date (filter by preVenue if provided)
+  // Map venue names -> ids used in client
+  const VENUE_ID_MAP = {
+    'Orchard Cineplex A': 'inox',
+    'Marina Theatre Hall 2': 'pvr1',
+    'Jewel Cinema 5': 'pvr2',
+    'Tampines Stage 1': 'pvr3'
+  };
+
+  // Group schedules from API: date -> venue -> times
+  let groupedByDate = {};
+  fetch(`api/get_schedule.php?show_id=${id}`)
+    .then(r => r.json())
+    .then(rows => {
+      const byDate = {};
+      for (const r of rows) {
+        const dtLocal = r.start_at.replace(' ','T'); // "YYYY-MM-DDTHH:MM:SS"
+        const d = new Date(dtLocal);
+        const dateKey = fmtLocalDate(d);
+        const venueName = r.venue;
+        const venueId = VENUE_ID_MAP[venueName] || venueName.toLowerCase().replace(/\W+/g,'');
+        const label = to12h(d);
+
+        byDate[dateKey] ||= {};
+        byDate[dateKey][venueId] ||= { id: venueId, name: venueName, distance:'', cancel:true, times: [] };
+        byDate[dateKey][venueId].times.push({ label, at: r.start_at, price: parseFloat(r.price) });
+      }
+      groupedByDate = {};
+      for (const [dateKey, venuesObj] of Object.entries(byDate)) {
+        groupedByDate[dateKey] = Object.values(venuesObj).map(v => ({
+          ...v,
+          times: v.times.sort((a,b)=> a.at.localeCompare(b.at))
+        }));
+      }
+      renderDay(selectedDate);
+    })
+    .catch(err => { console.error('schedule load failed', err); groupedByDate={}; renderDay(selectedDate); });
+
+  function to12h(d){
+    let h = d.getHours(), m = String(d.getMinutes()).padStart(2,'0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12; if (h === 0) h = 12;
+    return `${String(h).padStart(2,'0')}:${m} ${ampm}`;
+  }
+
   function renderDay(key){
-    let rows = byDate[key] || [];
+    let rows = groupedByDate[key] || [];
     if (preVenue) rows = rows.filter(v => v.id === preVenue);
+
+    if (!rows.length){
+      venueList.innerHTML = `<div class="meta">No showtimes for ${key}.</div>`;
+      return;
+    }
     venueList.innerHTML = rows.map(v=>`
       <article class="venue-card" data-venue="${v.id}">
         <div class="venue-header">
           <div>
             <div class="venue-name">${v.name}</div>
-            <div class="venue-meta">${v.distance} away • ${v.cancel?'Allows cancellation':'No cancellation'}</div>
+            <div class="venue-meta">${v.distance || ''} ${v.cancel ? 'Allows cancellation' : ''}</div>
           </div>
           <button class="btn ghost btn-sm" aria-label="Favourite">♡</button>
         </div>
         <div class="times">
-          ${v.times.map(t=>`<button class="time-btn" data-time="${t}" data-venue="${v.id}">${t}</button>`).join('')}
+          ${v.times.map(t=>`<button class="time-btn" data-time="${t.label}" data-start="${t.at}" data-venue="${v.id}">${t.label}</button>`).join('')}
         </div>
         <div class="booking-drawer" id="drawer-${v.id}">
           <div class="booking-grid">
@@ -465,9 +558,6 @@ function bootShowDetails(){
     `).join('');
   }
 
-  renderDay(selectedDate);
-
-  // change date
   dateStrip.addEventListener('click', e=>{
     const btn = e.target.closest('.date-pill'); if(!btn) return;
     selectedDate = btn.dataset.date;
@@ -475,8 +565,7 @@ function bootShowDetails(){
     renderDay(selectedDate);
   });
 
-  // ----- Helpers -----
-  // combine YYYY-MM-DD with "hh:mm AM/PM" => "YYYY-MM-DD HH:MM:00"
+  // combine YYYY-MM-DD with "hh:mm AM/PM" (fallback when DB time missing)
   function combineDateTime(dateStr, timeLabel){
     const [hm, ampm] = timeLabel.split(' ');
     let [h,m] = hm.split(':').map(Number);
@@ -487,13 +576,13 @@ function bootShowDetails(){
     return `${dateStr} ${hh}:${mm}:00`;
   }
 
-  // ----- Interactions: open drawer / add preference -----
   venueList.addEventListener('click', async (e)=>{
     const tbtn = e.target.closest('.time-btn');
     if(tbtn){
       const venueId = tbtn.dataset.venue;
       const drawer = document.getElementById(`drawer-${venueId}`);
-      drawer.dataset.time = tbtn.dataset.time;
+      drawer.dataset.time  = tbtn.dataset.time;     // label like "10:25 PM"
+      drawer.dataset.start = tbtn.dataset.start;    // exact "YYYY-MM-DD HH:MM:SS"
       drawer.classList.add('open');
 
       const cls = document.getElementById(`class-${venueId}`);
@@ -514,18 +603,16 @@ function bootShowDetails(){
       const drawer = document.getElementById(`drawer-${venueId}`);
       const [label, priceStr] = document.getElementById(`class-${venueId}`).value.split('|');
       const qty = parseInt(document.getElementById(`qty-${venueId}`).value,10);
-      const time = drawer.dataset.time;
+      const startAt = drawer.dataset.start || combineDateTime(selectedDate, drawer.dataset.time);
 
-      // venue name from the card
       const card = addBtn.closest('.venue-card');
       const venueName = card.querySelector('.venue-name')?.textContent?.trim() || venueId;
 
-      // payload for DB
       const payload = {
         show_id: parseInt(id, 10),
         venue_id: venueId,
         venue_name: venueName,
-        start_at: combineDateTime(selectedDate, time),
+        start_at: startAt,              // exact DB datetime if available
         ticket_class: label,
         qty: qty,
         price: parseFloat(priceStr)
@@ -542,22 +629,18 @@ function bootShowDetails(){
           alert(json.error || 'Failed to save.');
           return;
         }
-
-        // Keep localStorage in sync for your existing UI
         if(window.PREFS?.add){
           PREFS.add({
             id: payload.show_id,
-            title: document.querySelector('#show-title')?.textContent || `Show #${payload.show_id}`,
+            title: qsel('#show-title')?.textContent || `Show #${payload.show_id}`,
             venue: payload.venue_name,
             start_at: payload.start_at,
             tickets: payload.qty,
             price: payload.price
           });
-        } else {
-          alert('Saved!');
         }
-
-        drawer.classList.remove('open');
+        qsel(`#drawer-${venueId}`).classList.remove('open');
+        alert('Added to preferences!');
       }catch(err){
         console.error(err);
         alert('Network error saving preference');
@@ -566,11 +649,11 @@ function bootShowDetails(){
   });
 }
 
+// ===== Home: date dropdown (Today + 4) =====
 function populateQuickSearchDate() {
   const sel = document.getElementById('qs-date');
-  if (!sel) return; // only present on the home page
+  if (!sel) return;
 
-  // Helper to format a local date as YYYY-MM-DD
   function fmtLocalDate(d) {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -579,22 +662,15 @@ function populateQuickSearchDate() {
   }
 
   sel.innerHTML = '';
-
   for (let i = 0; i < 5; i++) {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     d.setDate(d.getDate() + i);
-
     const opt = document.createElement('option');
-    opt.value = fmtLocalDate(d); // LOCAL date value
-    const label = d.toLocaleDateString(undefined, {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    });
+    opt.value = fmtLocalDate(d);
+    const label = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
     opt.textContent = (i === 0 ? 'Today — ' : '') + label;
     sel.appendChild(opt);
   }
 }
-
 document.addEventListener('DOMContentLoaded', populateQuickSearchDate);

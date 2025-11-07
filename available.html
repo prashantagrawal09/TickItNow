@@ -1,73 +1,100 @@
-
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TickItNow • Available Bookings</title>
+  <title>Available Bookings • TickItNow</title>
   <link rel="stylesheet" href="assets/styles.css">
 </head>
-<body onload="bootAvailable()">
+<body onload="(window.bootAvailable ? window.bootAvailable() : (function(){ alert('bootAvailable() not found. Is assets/app.js loaded?'); })())">
 <header class="header">
   <nav class="nav container">
-    <div class="logo"><span aria-hidden="true">🎟️</span><span>TickItNow</span></div>
+    <div class="logo">
+      <span aria-hidden="true">🎟️</span>
+      <span class="brand">TickItNow</span>
+    </div>
     <div class="links">
       <a href="index.html">Home</a>
       <a href="shows.html">Browse Shows</a>
       <a href="preferences.html">My Preferences</a>
+      <a class="active" href="available.html">Available Bookings</a>
     </div>
-    <span class="tag">Final Selection</span>
+    <a href="account.html" title="My Account" class="account-icon" style="font-size:24px;">👤</a>
   </nav>
 </header>
 
 <main class="container">
-  <h2>Available Bookings</h2>
-  <form id="final-form" action="confirmation.html" method="get">
-    <div class="card"><div class="card-body">
-      <div class="grid cols-3">
-        <div>
-          <label for="full_name">Full Name</label>
-          <input id="full_name" name="full_name" required placeholder="Your name">
-        </div>
-        <div>
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" required placeholder="you@example.com">
-        </div>
-        <div>
-          <label for="phone">Phone</label>
-          <input id="phone" name="phone" type="tel" required placeholder="+65 9000 0000">
-        </div>
-      </div>
-      <div style="margin-top:10px">
-        <label for="notes">Notes (optional)</label>
-        <textarea id="notes" name="notes" rows="2" placeholder="Special requests…"></textarea>
-      </div>
-    </div></div>
 
-    <div class="section">Your Ranked Picks</div>
-    <table class="table">
-      <thead><tr><th>#</th><th>Show</th><th>Start</th><th>Tickets</th><th>Status</th><th class="right">Select</th></tr></thead>
-      <tbody id="avail-body"></tbody>
-    </table>
+          <!-- Your details -->
+          <div class="card" style="margin-top:14px">
+            <div class="card-body">
+              <strong>Your details</strong>
+              <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px; margin-top:10px">
+                <div>
+                  <label class="meta" for="buyer-name">Full name</label>
+                  <input id="buyer-name" name="buyer_name" placeholder="e.g. Alex Tan" required>
+                </div>
+                <div>
+                  <label class="meta" for="buyer-phone">Phone</label>
+                  <input id="buyer-phone" name="buyer_phone" placeholder="+65 8XXXXXXX" pattern="^[0-9+()\s-]{7,}$" required>
+                </div>
+              </div>
+              <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px; margin-top:10px">
+                <div>
+                  <label class="meta" for="buyer-email">Email</label>
+                  <input id="buyer-email" name="buyer_email" type="email" placeholder="you@example.com" required>
+                </div>
+                <div>
+                  <label class="meta" for="buyer-note">Additional request (optional)</label>
+                  <input id="buyer-note" name="buyer_note" placeholder="Wheelchair access, aisle seat, etc.">
+                </div>
+              </div>
+              <p class="meta" id="buyer-hint" style="margin-top:8px; display:none"></p>
+            </div>
+          </div>
+          
+  <div class="card">
+    <div class="card-body">
+      <h2>Review Availability</h2>
+      <form id="final-form" method="post" action="confirmation.html">
+        <input type="hidden" name="return" value="available.html">
+        <table class="table" style="margin-top:10px">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Show</th>
+              <th>Start</th>
+              <th>Tickets</th>
+              <th>Status</th>
+              <th class="right">Select</th>
+            </tr>
+          </thead>
+          <tbody id="avail-body"></tbody>
+        </table>
 
-    <div class="flex" style="margin-top:14px">
-      <a class="btn" href="preferences.html">Back</a>
-      <button class="btn primary right" type="submit">Confirm Selected</button>
+
+
+        <div class="flex" style="margin-top:12px; gap:10px">
+          <a class="btn danger btn-sm" href="#" onclick="clearAllPrefs(); return false;">Clear All</a>
+          <button class="btn primary" type="submit">Confirm Selected</button>
+        </div>
+      </form>
     </div>
-  </form>
+  </div>
 </main>
 
 <footer class="site-footer">
   <div class="container">
     <div class="footer-links">
-      <a href="#">Terms &amp; Conditions</a>
-      <a href="#">Privacy Policy</a>
+      <a href="terms.html">Terms &amp; Conditions</a>
+      <a href="privacy.html">Privacy Policy</a>
       <a href="contact.html">Contact Us</a>
       <a href="#">FAQs</a>
     </div>
     <p class="copyright">© 2025 TickItNow. All rights reserved.</p>
   </div>
 </footer>
-<script src="assets/app.js"></script>
+
+<script src="assets/app.js?v=dev1"></script>
 </body>
 </html>

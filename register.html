@@ -5,72 +5,65 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Create Account • TickItNow</title>
   <link rel="stylesheet" href="assets/styles.css">
-  <style>
-    .back-link {font-size:24px;color:var(--accent);text-decoration:none;margin-bottom:10px;display:inline-block;}
-    .back-link:hover {color:var(--accent-2);}
-    .error {color:var(--danger);font-size:14px;margin-top:4px;}
-  </style>
 </head>
 <body>
 <header class="header">
   <nav class="nav container">
     <div class="logo"><span aria-hidden="true">🎟️</span><span class="brand">TickItNow</span></div>
+    <div class="links">
+      <a href="index.html">Home</a>
+      <a href="shows.html">Browse Shows</a>
+      <a href="preferences.html">My Preferences</a>
+      <a class="active" href="register.html">Create Account</a>
+    </div>
+    <a href="account.html" class="account-icon" style="font-size:24px;">👤</a>
   </nav>
 </header>
 
-<main class="container" style="max-width:480px;padding-top:60px">
-  <a href="account.html" class="back-link">← Back</a>
-  <div class="card">
-    <div class="card-body">
-      <h2>Create Account</h2>
-      <form id="registerForm" action="register_submit.php" method="post" novalidate>
-        <label class="meta" for="full_name">Full Name *</label>
-        <input id="full_name" name="full_name" required placeholder="Your full name">
+<main class="container" style="max-width:640px">
+  <div class="card"><div class="card-body">
+    <h2>Create your TickItNow account</h2>
+    <form action="api/register.php" method="post" style="margin-top:10px" novalidate>
+      <label class="meta" for="full_name">Full name</label>
+      <input id="full_name" name="full_name" required placeholder="e.g. Alex Tan">
 
-        <label class="meta" for="email">Email *</label>
-        <input id="email" name="email" type="email" required placeholder="you@example.com">
+      <label class="meta" for="email">Email</label>
+      <input id="email" name="email" type="email" required placeholder="you@example.com">
 
-        <label class="meta" for="password">Password *</label>
-        <input id="password" name="password" type="password" minlength="8" required placeholder="••••••••">
-        <div id="errorMsg" class="error"></div>
+      <label class="meta" for="phone">Phone</label>
+      <input id="phone" name="phone" required pattern="^[0-9+() -]{7,}$" placeholder="+65 8XXXXXXX">
 
-        <div class="flex" style="margin-top:18px;justify-content:space-between">
-          <button class="btn primary" type="submit">Create Account</button>
-          <a href="login.html" class="btn ghost">Already have an account?</a>
-        </div>
-      </form>
-    </div>
-  </div>
+      <label class="meta" for="password">Password</label>
+      <input id="password" name="password" type="password" required minlength="8" placeholder="Min 8 chars, letters & numbers">
+
+      <div class="note-box" style="margin:10px 0">
+        Password must be at least 8 characters and contain letters and numbers.
+      </div>
+
+      <div class="flex" style="gap:10px;margin-top:10px">
+        <button class="btn primary" type="submit">Create Account</button>
+        <a class="btn ghost" href="account.html">Back</a>
+      </div>
+    </form>
+    <p class="meta" style="margin-top:10px;color:#f7a5b2" id="err">
+      <!-- server can append ?error=... to show message -->
+      <script>
+        const u=new URL(location.href);const e=u.searchParams.get('error');
+        if(e){ document.currentScript.parentElement.textContent = e; }
+      </script>
+    </p>
+  </div></div>
 </main>
 
 <footer class="site-footer">
   <div class="container">
+    <div class="footer-links">
+      <a href="terms.html">Terms &amp; Conditions</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="contact.html">Contact Us</a>
+    </div>
     <p class="copyright">© 2025 TickItNow. All rights reserved.</p>
   </div>
 </footer>
-
-<script>
-document.getElementById('registerForm').addEventListener('submit', function(e){
-  const email = document.getElementById('email').value.trim();
-  const pass  = document.getElementById('password').value;
-  const error = document.getElementById('errorMsg');
-  error.textContent = '';
-
-  // Email validation
-  const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-  if(!emailPattern.test(email)){
-    e.preventDefault();
-    error.textContent = "Please enter a valid email address.";
-    return;
-  }
-
-  // Password validation: at least 8 chars, letters & numbers
-  if(pass.length < 8 || !/[A-Za-z]/.test(pass) || !/[0-9]/.test(pass)){
-    e.preventDefault();
-    error.textContent = "Password must be at least 8 characters and contain both letters and numbers.";
-    return;
-  }
-});
-</script>
 </body>
 </html>

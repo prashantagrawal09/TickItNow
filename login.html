@@ -5,42 +5,52 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Log In • TickItNow</title>
   <link rel="stylesheet" href="assets/styles.css">
-  <style>
-    .back-link {font-size:24px;color:var(--accent);text-decoration:none;margin-bottom:10px;display:inline-block;}
-    .back-link:hover {color:var(--accent-2);}
-    .error {color:var(--danger);font-size:14px;margin-top:4px;}
-  </style>
 </head>
 <body>
 <header class="header">
   <nav class="nav container">
     <div class="logo"><span aria-hidden="true">🎟️</span><span class="brand">TickItNow</span></div>
+    <div class="links">
+      <a href="index.html">Home</a>
+      <a href="shows.html">Browse Shows</a>
+      <a href="preferences.html">My Preferences</a>
+      <a class="active" href="login.html">Log In</a>
+    </div>
+    <a href="account.html" class="account-icon" style="font-size:24px;">👤</a>
   </nav>
 </header>
 
-<main class="container" style="max-width:480px;padding-top:60px">
-<a href="account.html" class="back-link">← Back</a>
-  <div class="card">
-    <div class="card-body">
-      <h2>Log In</h2>
-      <form action="login_submit.php" method="post" novalidate>
-        <label class="meta" for="email">Email *</label>
-        <input id="email" name="email" type="email" required placeholder="you@example.com">
+<main class="container" style="max-width:520px">
+  <div class="card"><div class="card-body">
+    <h2>Welcome back</h2>
+    <form action="api/login.php" method="post" style="margin-top:10px" novalidate>
+      <label class="meta" for="email">Email</label>
+      <input id="email" name="email" type="email" required placeholder="you@example.com">
 
-        <label class="meta" for="password">Password *</label>
-        <input id="password" name="password" type="password" required placeholder="••••••••">
+      <label class="meta" for="password">Password</label>
+      <input id="password" name="password" type="password" required placeholder="Your password">
 
-        <div class="flex" style="margin-top:18px;justify-content:space-between">
-          <button class="btn primary" type="submit">Log In</button>
-          <a href="register.html" class="btn ghost">Create Account</a>
-        </div>
-      </form>
-    </div>
-  </div>
+      <div class="flex" style="gap:10px;margin-top:10px">
+        <button class="btn primary" type="submit">Log In</button>
+        <a class="btn ghost" href="account.html">Back</a>
+      </div>
+    </form>
+    <p class="meta" style="margin-top:10px;color:#f7a5b2" id="err">
+      <script>
+        const u=new URL(location.href);const e=u.searchParams.get('error');
+        if(e){ document.currentScript.parentElement.textContent = e; }
+      </script>
+    </p>
+  </div></div>
 </main>
 
 <footer class="site-footer">
   <div class="container">
+    <div class="footer-links">
+      <a href="terms.html">Terms &amp; Conditions</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="contact.html">Contact Us</a>
+    </div>
     <p class="copyright">© 2025 TickItNow. All rights reserved.</p>
   </div>
 </footer>

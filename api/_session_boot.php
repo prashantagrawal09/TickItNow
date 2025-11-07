@@ -1,7 +1,7 @@
 <?php
-// start session and send JSON headers
-if (session_status() === PHP_SESSION_NONE) {
-  session_start();
+// api/_session_boot.php
+if (session_status() === PHP_SESSION_NONE) session_start();
+if (empty($_SESSION['session_id'])) {
+  $_SESSION['session_id'] = bin2hex(random_bytes(16));
 }
-header("Content-Type: application/json; charset=utf-8");
-$session_id = session_id();
+$session_id = $_SESSION['session_id'];
