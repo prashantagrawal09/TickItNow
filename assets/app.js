@@ -438,13 +438,14 @@ function bootShowDetails(){
   const qs  = new URLSearchParams(location.search);
   const preVenue = qs.get('venue');      // e.g. "pvr1"
   const preDate  = qs.get('date');       // "YYYY-MM-DD"
+
   const dateStrip = document.getElementById('date-strip');
   const venueList = document.getElementById('venue-list');
   if(!id || !dateStrip || !venueList) return;
 
-  // Header
+  // ---- Header (unchanged) ----
   const MOVIES = {
-    1:{title:'Fight Club', genre:'Action', rating:'R',   duration:'2h 19m', synopsis:'An underground fight club becomes something far darker.', trailer_url:'https://www.youtube.com/watch?v=SUXWAEX2jlg'},
+    1:{title:'Fight Club', genre:'Action', rating:'R', duration:'2h 19m', synopsis:'An underground fight club becomes something far darker.', trailer_url:'https://www.youtube.com/watch?v=SUXWAEX2jlg'},
     2:{title:'The Wolf of Wall Street', genre:'Biography', rating:'R', duration:'2h 59m', synopsis:'Greed, excess, and chaos on Wall Street.', trailer_url:'https://www.youtube.com/watch?v=iszwuX1AK6A'},
     3:{title:'Interstellar', genre:'Sci-Fi', rating:'PG13', duration:'2h 49m', synopsis:'A journey through space to save humanity.', trailer_url:'https://www.youtube.com/watch?v=zSWdZVtXT7E'},
     4:{title:'Spider-Man', genre:'Action', rating:'PG13', duration:'2h 10m', synopsis:'An ordinary teen discovers extraordinary power.', trailer_url:'https://www.youtube.com/watch?v=t06RUxPbp_c'},
@@ -455,53 +456,55 @@ function bootShowDetails(){
   qsel('#show-meta').textContent  = `${show.genre} • ${show.duration} • Rated ${show.rating}`;
   qsel('#show-synopsis').textContent = show.synopsis;
   const iframe = qsel('#show-trailer'); const embed = toEmbed(show.trailer_url);
-  if(embed){ iframe.src = embed; } else { qsel('.video-wrap').style.display='none'; }
+  if(embed){ iframe.src = embed; } else { qsel('.video-wrap')?.style && (qsel('.video-wrap').style.display='none'); }
 
-  // Date pills (5 days) – LOCAL time
-  function fmtLocalDate(d){
-    const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+  // ---- Helpers ----
+  const fmtLocalDate = (d)=> {
+    const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
     return `${y}-${m}-${day}`;
-  }
+  };
+  const to12h = (d)=>{
+    let h=d.getHours(), m=String(d.getMinutes()).padStart(2,'0');
+    const ampm = h>=12 ? 'PM':'AM';
+    h = h%12; if(h===0) h=12;
+    return `${String(h).padStart(2,'0')}:${m} ${ampm}`;
+  };
+
+  // Build date pills for 5 days (local midnight to avoid TZ issues)
   const days = [...Array(5)].map((_,i)=>{
     const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+i);
-    return { key: fmtLocalDate(d), dow: d.toLocaleDateString(undefined,{weekday:'short'}), day: d.getDate(), mon: d.toLocaleDateString(undefined,{month:'short'}) };
+    return { key: fmtLocalDate(d), dow: d.toLocaleDateString(undefined,{weekday:'short'}), day:d.getDate(), mon:d.toLocaleDateString(undefined,{month:'short'}) };
   });
   dateStrip.innerHTML = days.map((d,i)=>`
     <button class="date-pill ${i===0?'active':''}" data-date="${d.key}">
       <small>${d.dow} • ${d.mon}</small><strong>${d.day}</strong>
     </button>`).join('');
+
   let selectedDate = days[0].key;
   if (preDate && days.some(d=>d.key===preDate)) {
     selectedDate = preDate;
     requestAnimationFrame(()=>{ [...dateStrip.children].forEach((b,idx)=> b.classList.toggle('active', days[idx].key===preDate)); });
   }
 
-  // Map venue names -> ids used in client
-  const VENUE_ID_MAP = {
-    'Orchard Cineplex A': 'inox',
-    'Marina Theatre Hall 2': 'pvr1',
-    'Jewel Cinema 5': 'pvr2',
-    'Tampines Stage 1': 'pvr3'
-  };
-
-  // Group schedules from API: date -> venue -> times
+  // ---- Load schedule from backend (now returns venue_id + start_at) ----
   let groupedByDate = {};
-  fetch(`api/get_schedule.php?show_id=${id}`)
+  fetch(`api/get_schedule.php?show_id=${id}&start_days=0&end_days=4`)
     .then(r => r.json())
     .then(rows => {
+      // rows: [{ show_id, venue_id, venue, start_at }]
       const byDate = {};
       for (const r of rows) {
-        const dtLocal = r.start_at.replace(' ','T'); // "YYYY-MM-DDTHH:MM:SS"
-        const d = new Date(dtLocal);
+        // Treat as LOCAL by swapping space to 'T' (no 'Z'), avoids previous off-by-one issues
+        const d = new Date(r.start_at.replace(' ','T'));
         const dateKey = fmtLocalDate(d);
-        const venueName = r.venue;
-        const venueId = VENUE_ID_MAP[venueName] || venueName.toLowerCase().replace(/\W+/g,'');
+        const vid = r.venue_id;
         const label = to12h(d);
 
         byDate[dateKey] ||= {};
-        byDate[dateKey][venueId] ||= { id: venueId, name: venueName, distance:'', cancel:true, times: [] };
-        byDate[dateKey][venueId].times.push({ label, at: r.start_at, price: parseFloat(r.price) });
+        byDate[dateKey][vid] ||= { id: vid, name: r.venue, times: [] };
+        byDate[dateKey][vid].times.push({ label, at: r.start_at });
       }
+      // normalize to arrays + sort
       groupedByDate = {};
       for (const [dateKey, venuesObj] of Object.entries(byDate)) {
         groupedByDate[dateKey] = Object.values(venuesObj).map(v => ({
@@ -511,15 +514,13 @@ function bootShowDetails(){
       }
       renderDay(selectedDate);
     })
-    .catch(err => { console.error('schedule load failed', err); groupedByDate={}; renderDay(selectedDate); });
+    .catch(err => {
+      console.error('schedule load failed', err);
+      groupedByDate = {};
+      renderDay(selectedDate);
+    });
 
-  function to12h(d){
-    let h = d.getHours(), m = String(d.getMinutes()).padStart(2,'0');
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    h = h % 12; if (h === 0) h = 12;
-    return `${String(h).padStart(2,'0')}:${m} ${ampm}`;
-  }
-
+  // ---- Render a day ----
   function renderDay(key){
     let rows = groupedByDate[key] || [];
     if (preVenue) rows = rows.filter(v => v.id === preVenue);
@@ -533,13 +534,15 @@ function bootShowDetails(){
         <div class="venue-header">
           <div>
             <div class="venue-name">${v.name}</div>
-            <div class="venue-meta">${v.distance || ''} ${v.cancel ? 'Allows cancellation' : ''}</div>
+            <div class="venue-meta">Allows cancellation</div>
           </div>
           <button class="btn ghost btn-sm" aria-label="Favourite">♡</button>
         </div>
+
         <div class="times">
           ${v.times.map(t=>`<button class="time-btn" data-time="${t.label}" data-start="${t.at}" data-venue="${v.id}">${t.label}</button>`).join('')}
         </div>
+
         <div class="booking-drawer" id="drawer-${v.id}">
           <div class="booking-grid">
             <select id="class-${v.id}">
@@ -547,9 +550,7 @@ function bootShowDetails(){
               <option value="Premium|15.50">Premium — $15.50</option>
               <option value="VIP|18.00">VIP — $18.00</option>
             </select>
-            <select id="qty-${v.id}">
-              ${[1,2,3,4,5,6].map(n=>`<option>${n}</option>`).join('')}
-            </select>
+            <select id="qty-${v.id}">${[1,2,3,4,5,6].map(n=>`<option>${n}</option>`).join('')}</select>
             <button class="btn primary" id="add-${v.id}">Add</button>
           </div>
           <div class="meta" id="sum-${v.id}" style="margin-top:8px"></div>
@@ -558,31 +559,22 @@ function bootShowDetails(){
     `).join('');
   }
 
-  dateStrip.addEventListener('click', e=>{
+  // date click
+  dateStrip.addEventListener('click', (e)=>{
     const btn = e.target.closest('.date-pill'); if(!btn) return;
     selectedDate = btn.dataset.date;
     [...dateStrip.children].forEach(b=>b.classList.toggle('active', b===btn));
     renderDay(selectedDate);
   });
 
-  // combine YYYY-MM-DD with "hh:mm AM/PM" (fallback when DB time missing)
-  function combineDateTime(dateStr, timeLabel){
-    const [hm, ampm] = timeLabel.split(' ');
-    let [h,m] = hm.split(':').map(Number);
-    if (ampm.toUpperCase()==='PM' && h !== 12) h += 12;
-    if (ampm.toUpperCase()==='AM' && h === 12) h = 0;
-    const hh = String(h).padStart(2,'0');
-    const mm = String(m).padStart(2,'0');
-    return `${dateStr} ${hh}:${mm}:00`;
-  }
-
+  // open drawer + compute line total
   venueList.addEventListener('click', async (e)=>{
     const tbtn = e.target.closest('.time-btn');
     if(tbtn){
       const venueId = tbtn.dataset.venue;
       const drawer = document.getElementById(`drawer-${venueId}`);
-      drawer.dataset.time  = tbtn.dataset.time;     // label like "10:25 PM"
-      drawer.dataset.start = tbtn.dataset.start;    // exact "YYYY-MM-DD HH:MM:SS"
+      drawer.dataset.time  = tbtn.dataset.time;   // "hh:mm AM/PM"
+      drawer.dataset.start = tbtn.dataset.start;  // "YYYY-MM-DD HH:MM:SS" from DB
       drawer.classList.add('open');
 
       const cls = document.getElementById(`class-${venueId}`);
@@ -597,14 +589,14 @@ function bootShowDetails(){
       return;
     }
 
+    // add to preferences (DB + keep LS sync if you want)
     const addBtn = e.target.id?.startsWith('add-') ? e.target : null;
     if(addBtn){
       const venueId = addBtn.id.replace('add-','');
       const drawer = document.getElementById(`drawer-${venueId}`);
       const [label, priceStr] = document.getElementById(`class-${venueId}`).value.split('|');
       const qty = parseInt(document.getElementById(`qty-${venueId}`).value,10);
-      const startAt = drawer.dataset.start || combineDateTime(selectedDate, drawer.dataset.time);
-
+      const startAt = drawer.dataset.start; // exact DB datetime
       const card = addBtn.closest('.venue-card');
       const venueName = card.querySelector('.venue-name')?.textContent?.trim() || venueId;
 
@@ -612,7 +604,7 @@ function bootShowDetails(){
         show_id: parseInt(id, 10),
         venue_id: venueId,
         venue_name: venueName,
-        start_at: startAt,              // exact DB datetime if available
+        start_at: startAt,          // <- use exact value from API
         ticket_class: label,
         qty: qty,
         price: parseFloat(priceStr)
@@ -629,6 +621,7 @@ function bootShowDetails(){
           alert(json.error || 'Failed to save.');
           return;
         }
+        // optional local mirror
         if(window.PREFS?.add){
           PREFS.add({
             id: payload.show_id,

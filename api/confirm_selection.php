@@ -52,7 +52,7 @@ $user_id = !empty($_SESSION['user']['id']) ? (int)$_SESSION['user']['id'] : null
 try {
   $pdo->beginTransaction();
 
-  // 1) Load selected preferences for THIS session and lock them
+  // 1️⃣ Load selected preferences for THIS session and lock them
   $in = implode(',', array_fill(0, count($ids), '?'));
   $params = $ids; array_unshift($params, $session_id);
 
@@ -70,7 +70,7 @@ try {
     throw new Exception("Some selected items were not found in your session.");
   }
 
-  // 2) Lock inventory rows & validate availability
+  // 2️⃣ Lock inventory rows & validate availability
   $lockInv = $pdo->prepare("
     SELECT id, available_qty
     FROM show_inventory
@@ -83,16 +83,15 @@ try {
     $inv = $lockInv->fetch(PDO::FETCH_ASSOC);
     $need = (int)$p['qty'];
     $have = $inv ? (int)$inv['available_qty'] : 0;
-    if ($have < $need) {
-      $insuff[] = ["pref_id" => (int)$p['id'], "have" => $have, "need" => $need];
-    }
+    if ($have < $need) $insuff[] = ["pref_id"=>(int)$p['id'], "have"=>$have, "need"=>$need];
   }
   if ($insuff) {
     $pdo->rollBack();
-    echo json_encode(["ok"=>false, "reason"=>"insufficient", "items"=>$insuff]); exit;
+    echo json_encode(["ok"=>false,"reason"=>"insufficient","items"=>$insuff]);
+    exit;
   }
 
-  // 3) Deduct inventory
+  // 3️⃣ Deduct ONCE (the only deduction)
   $deduct = $pdo->prepare("
     UPDATE show_inventory
     SET available_qty = available_qty - ?
@@ -102,115 +101,49 @@ try {
     $need = (int)$p['qty'];
     $deduct->execute([$need, (int)$p['show_id'], $p['venue_id'], $p['start_at'], $p['ticket_class'], $need]);
     if ($deduct->rowCount() !== 1) {
-      // race condition – someone else grabbed the seats
       $pdo->rollBack();
-      echo json_encode(["ok"=>false, "reason"=>"race_conflict", "pref_id"=>(int)$p['id']]); exit;
+      echo json_encode(["ok"=>false,"reason"=>"race_conflict","pref_id"=>(int)$p['id']]);
+      exit;
     }
   }
 
-  // 4) Create booking header
+  // 4️⃣ Create booking header
   $total = 0.0;
-  foreach ($prefs as $p) { $total += ((float)$p['price']) * ((int)$p['qty']); }
-  // generate a human-readable booking ref
-$bookingRef = 'TKN-' . date('ymd') . '-' . strtoupper(substr(md5(uniqid('', true)), 0, 6)); // <- no extra )
-
-$insHdr = $pdo->prepare("
-  INSERT INTO bookings
-    (user_id, booking_ref, buyer_name, buyer_email, buyer_phone, buyer_note, total_amount)
-  VALUES (?,?,?,?,?,?,?)
-");
-$insHdr->execute([
-  $user_id,           // NULL or user id
-  $bookingRef,        // e.g. TKN-251104-ABC123
-  $buyer_name,
-  $buyer_email,
-  $buyer_phone,
-  $buyer_note,        // can be NULL/''
-  $total              // DECIMAL(10,2)
-]);
-
-$bookingId = (int)$pdo->lastInsertId();
-
-  // 5) Create booking lines (keep your current columns incl. pref_id & line_total)
-// 5) Create booking lines -> now use show_inventory, not showtimes
-
-$findInv = $pdo->prepare("
-  SELECT id FROM show_inventory
-  WHERE show_id = ? AND venue_id = ? AND start_at = ? AND ticket_class = ?
-  LIMIT 1
-");
-
-$insertInv = $pdo->prepare("
-  INSERT INTO show_inventory (show_id, venue_id, start_at, ticket_class, available_qty, updated_at)
-  VALUES (?,?,?,?,?,NOW())
-");
-
-$insLine = $pdo->prepare("
-  INSERT INTO booking_items (booking_id, tickets, price_each)
-  VALUES (?,?,?)
-");
-
-foreach ($prefs as $p) {
-  // 1️⃣ find or create the inventory entry
-  $findInv->execute([
-    (int)$p['show_id'],
-    $p['venue_id'],
-    $p['start_at'],
-    $p['ticket_class']
-  ]);
-  $inv_id = $findInv->fetchColumn();
-
-  if (!$inv_id) {
-    try {
-      $insertInv->execute([
-        (int)$p['show_id'],
-        $p['venue_id'],
-        $p['start_at'],
-        $p['ticket_class'],
-        100  // default seats
-      ]);
-      $inv_id = (int)$pdo->lastInsertId();
-    } catch (Throwable $e) {
-      $findInv->execute([
-        (int)$p['show_id'],
-        $p['venue_id'],
-        $p['start_at'],
-        $p['ticket_class']
-      ]);
-      $inv_id = (int)$findInv->fetchColumn();
-      if (!$inv_id) throw $e;
-    }
+  foreach ($prefs as $p) {
+    $total += ((float)$p['price']) * ((int)$p['qty']);
   }
 
-  // 2️⃣ insert booking line (no foreign key constraint needed)
-  $insLine->execute([
-    $bookingId,
-    (int)$p['qty'],
-    (float)$p['price']
-  ]);
+  $bookingRef = 'TKN-' . date('ymd') . '-' . strtoupper(substr(md5(uniqid('', true)), 0, 6));
 
-  // 3️⃣ deduct seats
-  $deduct = $pdo->prepare("
-    UPDATE show_inventory
-    SET available_qty = available_qty - ?
-    WHERE id = ? AND available_qty >= ?
+  $insHdr = $pdo->prepare("
+    INSERT INTO bookings
+      (user_id, booking_ref, buyer_name, buyer_email, buyer_phone, buyer_note, total_amount)
+    VALUES (?,?,?,?,?,?,?)
   ");
-  $deduct->execute([
-    (int)$p['qty'],
-    $inv_id,
-    (int)$p['qty']
+  $insHdr->execute([
+    $user_id,
+    $bookingRef,
+    $buyer_name,
+    $buyer_email,
+    $buyer_phone,
+    $buyer_note,
+    $total
   ]);
 
-  if ($deduct->rowCount() !== 1) {
-    throw new Exception("Insufficient seats for inventory #$inv_id");
+  $bookingId = (int)$pdo->lastInsertId();
+
+  // 5️⃣ Create booking lines ONLY (no deduction here)
+  $insLine = $pdo->prepare("
+    INSERT INTO booking_items (booking_id, tickets, price_each)
+    VALUES (?,?,?)
+  ");
+  foreach ($prefs as $p) {
+    $insLine->execute([
+      $bookingId,
+      (int)$p['qty'],
+      (float)$p['price']
+    ]);
   }
-}
-
-
-
-  // (Optional) clear selected preferences for cleanliness
-  // $del = $pdo->prepare("DELETE FROM preference_items WHERE session_id=? AND id IN ($in)");
-  // $del->execute($params);
 
   $pdo->commit();
 
@@ -219,7 +152,12 @@ foreach ($prefs as $p) {
     "booking_id"  => $bookingId,
     "booking_ref" => $bookingRef,
     "total"       => $total,
-    "buyer"       => ["name"=>$buyer_name, "email"=>$buyer_email, "phone"=>$buyer_phone, "note"=>$buyer_note],
+    "buyer"       => [
+      "name"  => $buyer_name,
+      "email" => $buyer_email,
+      "phone" => $buyer_phone,
+      "note"  => $buyer_note
+    ],
     "items"       => array_map(function($p){
       return [
         "pref_id"      => (int)$p['id'],
