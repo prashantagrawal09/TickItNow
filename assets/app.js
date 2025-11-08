@@ -65,7 +65,6 @@ function bootShows(){
         <div class="meta">${s.genre} • ${s.rating}</div>
         <div class="flex" style="margin-top:10px">
           <a class="btn primary" href="show.html?id=${s.id}">View Showtimes</a>
-          <span class="tag">#${s.id.toString().padStart(3,"0")}</span>
         </div>
       </div>
     </div>
