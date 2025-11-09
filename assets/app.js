@@ -308,7 +308,6 @@ window.bootAvailable = async function bootAvailable(){
   const phoneEl = document.getElementById('buyer-phone');
   const emailEl = document.getElementById('buyer-email');
   const noteEl  = document.getElementById('buyer-note');
-  const hintEl  = document.getElementById('buyer-hint');
   if(!tbody || !form){ console.error('missing form/table'); return; }
 // At start of bootAvailable()
 // try { sessionStorage.removeItem('tickitnow_last_booking'); } catch {}
@@ -324,6 +323,7 @@ window.bootAvailable = async function bootAvailable(){
       const d = String(me.phone).replace(/\D/g,'');
       if (d.length >= 8) phoneEl.value = d.slice(-8); // keep last 8 digits only
     }
+    if (emailEl && me.email){ emailEl.value = me.email; emailEl.dispatchEvent(new Event('input', {bubbles:true})); }
   }
 
   // 2) Load rows (your existing logic)
