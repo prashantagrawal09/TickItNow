@@ -50,7 +50,7 @@ function fmtDateTimeLocal(isoLocal){
 function bootShows(){
   const shows = [
     {id:1,title:"Fight Club",genre:"Action",rating:"R",poster:"assets/posters/fightclub.jpeg"},
-    {id:2,title:"The Wolf of Wall Street",genre:"Biography",rating:"R",poster:"assets/posters/wolf.jpeg"},
+    {id:2,title:"The Wolf of Wall Street",genre:"Biography",rating:"R",poster:"assets/posters/wolf_.jpeg"},
     {id:3,title:"Interstellar",genre:"Sci-Fi",rating:"PG13",poster:"assets/posters/interstellar.jpeg"},
     {id:4,title:"Spiderman",genre:"Action",rating:"PG13",poster:"assets/posters/spiderman.jpeg"},
     {id:5,title:"Hacksaw Ridge",genre:"Sci-Fi",rating:"PG13",poster:"assets/posters/hacksaw.jpeg"}
@@ -97,8 +97,8 @@ async function renderPreferences(){
         <td>${x.tickets || 2}</td>
         <td>$${Number(x.price||0).toFixed(2)}</td>
         <td class="right">
-          <button class="btn" onclick="PREFS.move(${x.id}, '${x.start_at}','up')">↑</button>
-          <button class="btn" onclick="PREFS.move(${x.id}, '${x.start_at}','down')">↓</button>
+        <button class="btn move-up" onclick="PREFS.move(${x.id}, '${x.start_at}','up')">↑</button>
+        <button class="btn move-down" onclick="PREFS.move(${x.id}, '${x.start_at}','down')">↓</button>
           <button class="btn danger" onclick="PREFS.remove(${x.id}, '${x.start_at}'); renderPreferences()">Remove</button>
         </td>
       </tr>
@@ -115,8 +115,8 @@ async function renderPreferences(){
       <td>${x.qty}</td>
       <td>$${Number(x.price||0).toFixed(2)}</td>
       <td class="right">
-        <button class="btn" onclick="movePref(${x.id}, 'up')">↑</button>
-        <button class="btn" onclick="movePref(${x.id}, 'down')">↓</button>
+        <button class="btn move-up" onclick="movePref(${x.id}, 'up')">↑</button>
+        <button class="btn move-down" onclick="movePref(${x.id}, 'down')">↓</button>
         <button class="btn danger" onclick="removePref(${x.id})">Remove</button>
       </td>
     </tr>
@@ -242,11 +242,11 @@ function attachLiveValidationForBuyerForm() {
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/; // lenient & practical
   const nameOK  = v => v.trim().length >= 2;
-  const phoneOK = v => /^[0-9()+\- ]{7,20}$/.test(v.trim());
+  const phoneOK = v => /^\d{8}$/.test(v.trim());
   const emailOK = v => emailRegex.test(v.trim());
 
   function validateName()  { const ok = nameOK(nameEl.value);  nameEl.setCustomValidity(ok ? '' : 'Please enter at least 2 characters.'); return ok; }
-  function validatePhone() { const ok = phoneOK(phoneEl.value); phoneEl.setCustomValidity(ok ? '' : 'Use digits, spaces, +, ( ), or - (7–20 characters).'); return ok; }
+  function validatePhone() { const ok = phoneOK(phoneEl.value); phoneEl.setCustomValidity(ok ? '' : 'Enter exactly 8 digits (SG).'); return ok; }
   function validateEmail() {
     // Trim in-place so the DOM shows the corrected value
     emailEl.value = emailEl.value.trim().toLowerCase();
@@ -280,10 +280,10 @@ function attachLiveValidationForRegisterForm() {
   const passEl  = document.getElementById('reg-pass');
   if (!nameEl || !phoneEl || !emailEl || !passEl) return;
 
-  const nameOK  = v => v.trim().length >= 2;
-  const phoneOK = v => /^[0-9()+\- ]{7,20}$/.test(v.trim());
-  const emailOK = el => el.checkValidity();
-  const passOK  = v => v.length >= 6;
+  const nameOK   = v => v.trim().length >= 2;
+  const phoneOK  = v => /^\d{8}$/.test(v.trim());
+  const emailOK  = el => el.checkValidity();
+  const passOK   = v => v.length >= 8 && /[A-Za-z]/.test(v) && /\d/.test(v);
 
   function bind(el, ok, msg) {
     const run = () => { el.setCustomValidity(ok(el.value) ? '' : msg); el.reportValidity(); };
@@ -292,11 +292,10 @@ function attachLiveValidationForRegisterForm() {
   }
 
   bind(nameEl,  nameOK,  'Please enter at least 2 characters.');
-  bind(phoneEl, phoneOK, 'Use digits, spaces, +, (), or - (7–20 chars).');
+  bind(phoneEl, phoneOK, 'Enter exactly 8 digits (SG).');
   bind(emailEl, _ => emailOK(emailEl), 'Please enter a valid email.');
-  bind(passEl,  passOK,  'Password must be at least 6 characters.');
+  bind(passEl,  passOK,  'Min 8 chars, with letters & numbers.');
 }
-
 /* =========================================
    available.html – availability table
    ========================================= */
@@ -531,7 +530,7 @@ window.bootConfirm = function bootConfirm(){
     { id:2, title:"The Wolf of Wall Street", blurb:"Greed, excess, and chaos on Wall Street.", img:"assets/posters/wolf.jpeg" },
     { id:3, title:"Interstellar", blurb:"A journey through space to save humanity.", img:"assets/posters/interstellar.jpeg" },
     { id:4, title:"Spiderman", blurb:"An ordinary teen discovers extraordinary power.", img:"assets/posters/spiderman.jpeg" },
-    { id:5, title:"Hacksaw Ridge", blurb:"A medic’s courage turns the tide on the bloodiest battlefield.", img:"assets/posters/hacksaw.jpeg" }
+    { id:5, title:"Hacksaw Ridge", blurb:"A medic’s courage turns the tide on the bloodiest battlefield.", img:"assets/posters/hacksaw_.jpeg" }
   ];
 
   const track = document.getElementById('carousel-track');
@@ -608,6 +607,70 @@ function toEmbed(url){
   return url;
 }
 
+// Map each movie ID -> array of local BTS images you ship in assets/gallery/
+const BTS_IMAGES = {
+  1: ['assets/gallery/fightclub1.jpeg','assets/gallery/figthclub2.jpeg','assets/gallery/fightclub3.jpeg'],
+  2: ['assets/gallery/wolf1.jpeg','assets/gallery/wolf2.jpeg', 'assets/gallery/wolf3.jpeg'],
+  3: ['assets/gallery/interstellar1.jpeg','assets/gallery/interstellar2.jpeg', 'assets/gallery/interstellar3.jpeg'],
+  4: ['assets/gallery/spidey1.jpeg','assets/gallery/spidey2.jpeg','assets/gallery/spidey3.jpeg'],
+  5: ['assets/gallery/hacksaw1.jpeg','assets/gallery/hacksaw2.jpeg','assets/gallery/hacksaw3.jpeg']
+};
+
+
+
+function buildBTSGallery(showId){
+  const list = BTS_IMAGES[showId] || [];
+  const track = document.getElementById('bts-carousel');
+  const dots  = document.getElementById('bts-dots');
+  const prev  = document.getElementById('bts-prev');
+  const next  = document.getElementById('bts-next');
+
+  if (!track) return;
+
+  // Fallback if no images found
+  if (!list.length) {
+    track.innerHTML = `<div class="bts-slide active">
+      <div class="bts-fallback">No behind-the-scenes images available.</div>
+    </div>`;
+    if (dots) dots.innerHTML = '';
+    if (prev) prev.style.display = 'none';
+    if (next) next.style.display = 'none';
+    return;
+  }
+
+  track.innerHTML = list.map((src,i)=>`
+    <div class="bts-slide ${i===0?'active':''}">
+      <img src="${src}" alt="Behind the scenes image ${i+1}">
+    </div>
+  `).join('');
+
+  if (dots) {
+    dots.innerHTML = list.map((_,i)=>`<button type="button" data-i="${i}" aria-label="Go to slide ${i+1}"></button>`).join('');
+  }
+
+  const slides = [...track.querySelectorAll('.bts-slide')];
+  const dotBtns = dots ? [...dots.querySelectorAll('button')] : [];
+  let idx = 0, N = slides.length, timer = null, hovering = false;
+
+  function go(n){
+    idx = (n + N) % N;
+    slides.forEach((s,i)=> s.classList.toggle('active', i===idx));
+    dotBtns.forEach((d,i)=> d.setAttribute('aria-current', i===idx ? 'true' : 'false'));
+  }
+  function start(){ stop(); timer = setInterval(()=>{ if(!hovering) go(idx+1); }, 3500); }
+  function stop(){ if (timer) clearInterval(timer); }
+
+  prev && prev.addEventListener('click', ()=>{ go(idx-1); start(); });
+  next && next.addEventListener('click', ()=>{ go(idx+1); start(); });
+  dotBtns.forEach(b => b.addEventListener('click', e => { go(+e.currentTarget.dataset.i); start(); }));
+
+  track.addEventListener('mouseenter', ()=>{ hovering = true; });
+  track.addEventListener('mouseleave', ()=>{ hovering = false; });
+
+  go(0); start();
+}
+
+
 function bootShowDetails(){
   const id = new URLSearchParams(location.search).get('id');
   const qs  = new URLSearchParams(location.search);
@@ -617,6 +680,8 @@ function bootShowDetails(){
   const dateStrip = document.getElementById('date-strip');
   const venueList = document.getElementById('venue-list');
   if(!id || !dateStrip || !venueList) return;
+
+  buildBTSGallery(parseInt(id,10));
 
   // ---- Header (unchanged) ----
   const MOVIES = {
@@ -630,8 +695,8 @@ function bootShowDetails(){
   qsel('#show-title').textContent = show.title;
   qsel('#show-meta').textContent  = `${show.genre} • ${show.duration} • Rated ${show.rating}`;
   qsel('#show-synopsis').textContent = show.synopsis;
-  const iframe = qsel('#show-trailer'); const embed = toEmbed(show.trailer_url);
-  if(embed){ iframe.src = embed; } else { qsel('.video-wrap')?.style && (qsel('.video-wrap').style.display='none'); }
+  // const iframe = qsel('#show-trailer'); const embed = toEmbed(show.trailer_url);
+  // if(embed){ iframe.src = embed; } else { qsel('.video-wrap')?.style && (qsel('.video-wrap').style.display='none'); }
 
   // ---- Helpers ----
   const fmtLocalDate = (d)=> {
@@ -748,6 +813,19 @@ function bootShowDetails(){
     if(tbtn){
       const venueId = tbtn.dataset.venue;
       const drawer = document.getElementById(`drawer-${venueId}`);
+
+      const card = tbtn.closest('.venue-card');
+      if (card) {
+        card.querySelectorAll('.time-btn').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
+      }
+      tbtn.classList.add('active');
+      tbtn.setAttribute('aria-pressed', 'true');
+
+
+
       drawer.dataset.time  = tbtn.dataset.time;   // "hh:mm AM/PM"
       drawer.dataset.start = tbtn.dataset.start;  // "YYYY-MM-DD HH:MM:SS" from DB
       drawer.classList.add('open');

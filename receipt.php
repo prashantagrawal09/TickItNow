@@ -42,7 +42,7 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 <head>
   <meta charset="utf-8">
   <title>Receipt • <?=h($booking['booking_ref'])?></title>
-  <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="assets/site.css">
   <style>
     .receipt { max-width: 760px; margin: 32px auto; }
     .receipt h1 { margin-bottom: 0; }
@@ -106,7 +106,7 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
   <div class="flex" style="margin-top:16px">
     <a class="btn primary" href="shows.html">Book More</a>
     <a class="btn ghost" href="account.html">Back to Account</a>
-    <button class="btn" onclick="window.print()">Print</button>
+    <button class="btn print" onclick="window.print()">Print</button>
   </div>
 </main>
 

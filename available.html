@@ -47,16 +47,18 @@
               placeholder="Your full name">
           </div>
           <div>
-            <label class="meta" for="buyer-phone">Phone</label>
+            <label class="meta" for="buyer-phone">Phone (+65)</label>
             <input
               id="buyer-phone"
               name="buyer_phone"
               required
-              inputmode="tel"
-              autocomplete="tel"
-              pattern="^[0-9()+\- ]{7,20}$"
-              title="Use digits, spaces, +, ( ), or - (7–20 characters)."
-              placeholder="+65 8123 4567">
+              inputmode="numeric"
+              pattern="^\d{8}$"
+              minlength="8"
+              maxlength="8"
+              placeholder="8-digit number"
+              oninput="this.value=this.value.replace(/\D/g,'').slice(0,8)"
+            >
           </div>
         </div>
 

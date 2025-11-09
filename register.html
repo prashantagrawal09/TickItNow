@@ -10,7 +10,10 @@
 <body>
 <header class="header">
   <nav class="nav container">
-    <div class="logo"><span aria-hidden="true">🎟️</span><span class="brand">TickItNow</span></div>
+    <div class="logo">
+      <span aria-hidden="true">🎟️</span>
+      <span class="brand">TickItNow</span>
+    </div>
     <div class="links">
       <a href="index.html">Home</a>
       <a href="shows.html">Browse Shows</a>
@@ -22,56 +25,71 @@
 </header>
 
 <main class="container" style="max-width:640px">
-  <div class="card"><div class="card-body">
-    <h2>Create your TickItNow account</h2>
+  <div class="card">
+    <div class="card-body">
+      <h2>Create your TickItNow account</h2>
 
-    <!-- Keep novalidate so our JS shows nicer messages; remove it if you want browser defaults -->
-    <form id="register-form" action="api/register.php" method="post" style="margin-top:10px" novalidate>
-      <label class="meta" for="reg-name">Full name</label>
-      <input
-        id="reg-name" name="name"
-        required minlength="2" maxlength="50"
-        autocomplete="name"
-        placeholder="Your full name">
+      <form id="register-form" action="api/register.php" method="post" style="margin-top:10px" novalidate>
+        <label class="meta" for="reg-name">Full name</label>
+        <input
+          id="reg-name"
+          name="name"
+          required minlength="2" maxlength="50"
+          autocomplete="name"
+          placeholder="Your full name"
+        >
 
-      <label class="meta" for="reg-email">Email</label>
-      <input id="reg-email" name="email" required type="email"
-      autocomplete="email" inputmode="email"
-      autocapitalize="off" spellcheck="false"
-      placeholder="you@example.com">
+        <label class="meta" for="reg-email">Email</label>
+        <input
+          id="reg-email"
+          name="email"
+          required
+          type="email"
+          autocomplete="email"
+          inputmode="email"
+          autocapitalize="off"
+          spellcheck="false"
+          placeholder="you@example.com"
+        >
 
-      <label class="meta" for="reg-phone">Phone (+65)</label>
-      <input
-        id="reg-phone" name="phone"
-        required
-        inputmode="tel" autocomplete="tel"
-        pattern="^[0-9()+\- ]{7,20}$"
-        title="Use digits, spaces, +, ( ), or - (7–20 characters)."
-        placeholder="+65 8123 4567">
+        <label class="meta" for="reg-phone">Phone (+65)</label>
+        <input
+          id="reg-phone"
+          name="phone"
+          required
+          inputmode="numeric"
+          pattern="^\d{8}$"
+          minlength="8"
+          maxlength="8"
+          placeholder="8-digit number"
+          oninput="this.value=this.value.replace(/\D/g,'').slice(0,8)"
+        >
 
-      <label class="meta" for="reg-pass">Password</label>
-      <input
-        id="reg-pass" name="password"
-        type="password"
-        required
-        minlength="8"
-        pattern="^(?=.*[A-Za-z])(?=.*\d).{8,}$"
-        autocomplete="new-password"
-        placeholder="At least 8 characters">
+        <label class="meta" for="reg-pass">Password</label>
+        <input
+          id="reg-pass"
+          name="password"
+          type="password"
+          required
+          minlength="8"
+          pattern="^(?=.*[A-Za-z])(?=.*\d).{8,}$"
+          autocomplete="new-password"
+          placeholder="At least 8 characters"
+        >
 
-      <div class="note-box" style="margin:10px 0">
-        Password must be <strong>at least 8 characters</strong> and contain <strong>letters and numbers</strong>.
-      </div>
+        <div class="note-box" style="margin:10px 0">
+          Password must be <strong>at least 8 characters</strong> and contain <strong>letters and numbers</strong>.
+        </div>
 
-      <div class="flex" style="gap:10px;margin-top:10px">
-        <button class="btn primary" type="submit">Create Account</button>
-        <a class="btn ghost" href="account.html">Back</a>
-      </div>
+        <div class="flex" style="gap:10px;margin-top:10px">
+          <button class="btn primary" type="submit">Create Account</button>
+          <a class="btn ghost" href="account.html">Back</a>
+        </div>
 
-      <!-- Server error/success surface via query string -->
-      <p class="meta" id="reg-msg" style="margin-top:10px;"></p>
-    </form>
-  </div></div>
+        <p class="meta" id="reg-msg" style="margin-top:10px;"></p>
+      </form>
+    </div>
+  </div>
 </main>
 
 <footer class="site-footer">
@@ -86,45 +104,60 @@
 </footer>
 
 <script>
-  // ---- Tiny live validation (no React needed) ----
+  // ---- Live validation script ----
   (function(){
-  const form  = document.getElementById('register-form');
-  const name  = document.getElementById('reg-name');
-  const email = document.getElementById('reg-email');
-  const phone = document.getElementById('reg-phone');
-  const pass  = document.getElementById('reg-pass');
-  const msg   = document.getElementById('reg-msg');
+    const form  = document.getElementById('register-form');
+    const name  = document.getElementById('reg-name');
+    const email = document.getElementById('reg-email');
+    const phone = document.getElementById('reg-phone');
+    const pass  = document.getElementById('reg-pass');
+    const msg   = document.getElementById('reg-msg');
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-  const nameOK  = v => v.trim().length >= 2;
-  const phoneOK = v => /^[0-9()+\- ]{7,20}$/.test(v.trim());
-  const passOK  = v => /^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(v);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    const nameOK  = v => v.trim().length >= 2;
+    const phoneOK = v => /^\d{8}$/.test(v.trim());   // exactly 8 digits
+    const passOK  = v => /^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(v);
 
-  function setValidity(el, ok, text){
-    el.setCustomValidity(ok ? '' : text);
-    el.reportValidity();
-  }
-
-  name.addEventListener('input',  () => setValidity(name,  nameOK(name.value),   'Please enter at least 2 characters.'));
-  phone.addEventListener('input', () => setValidity(phone, phoneOK(phone.value), 'Use digits, spaces, +, ( ), or - (7–20 characters).'));
-  email.addEventListener('input', () => {
-    email.value = email.value.trim().toLowerCase();
-    setValidity(email, emailRegex.test(email.value), 'Please enter a valid email (e.g., name@site.com).');
-  });
-  pass.addEventListener('input',  () => setValidity(pass,  passOK(pass.value),   'Min 8 chars with letters and numbers.'));
-
-  [name, phone, email, pass].forEach(el => el.addEventListener('blur', () => el.reportValidity()));
-
-  form.addEventListener('submit', (e)=>{
-    // Normalize before final check
-    email.value = email.value.trim().toLowerCase();
-    const ok = nameOK(name.value) && phoneOK(phone.value) && emailRegex.test(email.value) && passOK(pass.value);
-    if(!ok){
-      e.preventDefault();
-      [name, phone, email, pass].forEach(el => el.reportValidity());
+    function setValidity(el, ok, text){
+      el.setCustomValidity(ok ? '' : text);
+      el.reportValidity();
     }
-  });
-})();
+
+    name.addEventListener('input',  () => setValidity(name,  nameOK(name.value),   'Please enter at least 2 characters.'));
+    phone.addEventListener('input', () => setValidity(phone, phoneOK(phone.value), 'Enter exactly 8 digits (SG).'));
+    email.addEventListener('input', () => {
+      email.value = email.value.trim().toLowerCase();
+      setValidity(email, emailRegex.test(email.value), 'Please enter a valid email (e.g., name@site.com).');
+    });
+    pass.addEventListener('input',  () => setValidity(pass,  passOK(pass.value),   'Min 8 chars with letters and numbers.'));
+
+    [name, phone, email, pass].forEach(el => el.addEventListener('blur', () => el.reportValidity()));
+
+    form.addEventListener('submit', (e)=>{
+      email.value = email.value.trim().toLowerCase();
+      const ok = nameOK(name.value) && phoneOK(phone.value) && emailRegex.test(email.value) && passOK(pass.value);
+      if(!ok){
+        e.preventDefault();
+        [name, phone, email, pass].forEach(el => el.reportValidity());
+        return;
+      }
+      // Optional message area reset
+      msg.textContent = '';
+    });
+
+    // Show server errors (?error=...)
+    const u = new URL(location.href);
+    const err = u.searchParams.get('error');
+    if(err){
+      msg.style.color = '#f88';
+      msg.textContent = decodeURIComponent(err);
+    }
+    const notice = u.searchParams.get('notice');
+    if(notice){
+      msg.style.color = '#4caf50';
+      msg.textContent = decodeURIComponent(notice);
+    }
+  })();
 </script>
 </body>
 </html>

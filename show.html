@@ -35,15 +35,18 @@
   <section class="card" style="overflow:hidden">
     <div class="card-body">
       <div class="show-hero-grid">
-        <div class="video-wrap">
-          <iframe id="show-trailer"
-                  src=""
-                  title="Trailer"
-                  frameborder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerpolicy="strict-origin-when-cross-origin"
-                  allowfullscreen></iframe>
-        </div>
+<!-- Behind the Scenes (local, no external embeds) -->
+<div class="bts-wrap">
+  <!-- <h3>Behind the Scenes</h3> -->
+  <div id="bts-carousel" class="bts-carousel">
+    <!-- Slides injected by app.js -->
+  </div>
+  <div class="bts-controls">
+    <button type="button" id="bts-prev" aria-label="Previous">‹</button>
+    <div id="bts-dots" class="bts-dots"></div>
+    <button type="button" id="bts-next" aria-label="Next">›</button>
+  </div>
+</div>
         <div>
           <h2 id="show-title">Loading…</h2>
           <p id="show-meta" class="meta">—</p>

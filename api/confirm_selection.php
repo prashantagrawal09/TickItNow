@@ -39,7 +39,15 @@ if (!count($ids)) { http_response_code(400); echo json_encode(["error"=>"No item
 // ---------- collect buyer fields ----------
 $buyer_name  = trim($_POST['buyer_name']  ?? ($body['buyer_name']  ?? ''));
 $buyer_email = trim($_POST['buyer_email'] ?? ($body['buyer_email'] ?? ''));
-$buyer_phone = trim($_POST['buyer_phone'] ?? ($body['buyer_phone'] ?? ''));
+$buyer_phone_raw = trim($_POST['buyer_phone'] ?? ($body['buyer_phone'] ?? ''));
+$buyer_digits = preg_replace('/\D+/', '', $buyer_phone_raw);
+if (strlen($buyer_digits) !== 8) {
+  http_response_code(400);
+  echo json_encode(["error"=>"Phone must be exactly 8 digits for Singapore."]);
+  exit;
+}
+$buyer_phone = '+65 ' . $buyer_digits; // use this in the booking insert
+
 $buyer_note  = trim($_POST['buyer_note']  ?? ($body['buyer_note']  ?? ''));
 
 if ($buyer_name === '' || $buyer_email === '' || $buyer_phone === '') {

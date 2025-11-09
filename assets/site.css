@@ -274,7 +274,7 @@ form label.meta{ display:block; margin-top:10px; margin-bottom:4px; }
 /* Date strip & venues (same look as design) */
 .date-strip{
   display:grid; grid-auto-flow:column; grid-auto-columns:minmax(86px,1fr);
-  gap:8px; overflow:auto; padding:8px 0 4px;
+  gap:8px; overflow:auto; padding:20px 0 4px;
 }
 .date-pill{
   border:1px solid var(--border);
@@ -290,10 +290,10 @@ form label.meta{ display:block; margin-top:10px; margin-bottom:4px; }
 }
 
 .venue-list{ display:grid; gap: 25px; }
-.venue-card{ border:1px solid var(--border); background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.025)); border-radius:16px; padding:16px; }
-.venue-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
-.venue-name{ font-weight:700; }
-.venue-meta{ color:var(--muted); font-size: 15px}
+.venue-card{ border:1px solid var(--border); background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.025)); border-radius:12px; padding:12px; }
+.venue-header{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.venue-name{ font-weight:800; }
+.venue-meta{ color: var(--muted); font-size: 12px; padding-top: 5px;}
 
 .times{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
 .time-btn{
@@ -367,4 +367,100 @@ a.btn.btn-disabled {
   color: #ff3366;           /* standout color */
   font-weight: 600;         /* make it bolder */
   border-bottom: 2px solid #ff3366;
+}
+
+.move-up {
+  background-color: #1f5c2e;
+  color: white;
+}
+
+.move-down {
+  background-color: #880202;
+  color: white;
+}
+
+.move-up:hover,
+.move-down:hover {
+  filter: brightness(1.1);
+}
+
+.print {
+  background-color: #880202;
+  color: white;
+}
+
+/* time buttons (default look may already exist) */
+.time-btn {
+  border: 1px solid #d1d5db;     /* light gray */
+  background: #fff;
+  color: #111827;                 /* near-black */
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s, transform .05s;
+}
+
+/* selected time */
+.time-btn.active,
+.time-btn[aria-pressed="true"] {
+  background: #0b5;               /* green pop */
+  border-color: #094; 
+  color: #fff;
+}
+
+/* (optional) nice press feedback */
+.time-btn:active { transform: translateY(1px); }
+
+
+.bts-wrap { margin-top: 16px; }
+.bts-carousel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.bts-slide { display: none; }
+.bts-slide.active { display: block; }
+.bts-slide img {
+  width: 100%;
+  display: block;
+  border-radius: 12px;
+}
+
+.bts-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.bts-controls button {
+  border: 1px solid #ddd;
+  background: #fafafa;
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.bts-controls button:hover {
+  background: #f0f0f0;
+}
+
+.bts-dots { display: flex; gap: 6px; }
+.bts-dots button {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  border: 1px solid #aaa;
+  background: #ddd;
+}
+.bts-dots button[aria-current="true"] {
+  background: #666;
+  border-color: #666;
+}
+
+.bts-fallback {
+  padding: 24px;
+  text-align: center;
+  background: #0f1720;
+  color: #9fb3c8;
+  border-radius: 12px;
 }
