@@ -29,57 +29,46 @@
   <form id="final-form" method="post" action="confirmation.html" novalidate>
     <input type="hidden" name="return" value="available.html">
 
-    <!-- Your details -->
     <div class="card" style="margin-top:14px">
       <div class="card-body">
         <strong>Your details</strong>
-
-        <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px; margin-top:10px">
+    
+        <div class="grid two-col" style="margin-top:10px">
           <div>
             <label class="meta" for="buyer-name">Full name</label>
-            <input
-              id="buyer-name"
-              name="buyer_name"
-              required
-              minlength="2"
-              maxlength="50"
-              autocomplete="name"
-              placeholder="Your full name">
+            <input id="buyer-name" name="buyer_name" required minlength="2" maxlength="50"
+                   autocomplete="name" placeholder="Your full name">
           </div>
+    
           <div>
-            <label class="meta" for="buyer-phone">Phone (+65)</label>
-            <input
-              id="buyer-phone"
-              name="buyer_phone"
-              required
-              inputmode="numeric"
-              pattern="^\d{8}$"
-              minlength="8"
-              maxlength="8"
-              placeholder="8-digit number"
-              oninput="this.value=this.value.replace(/\D/g,'').slice(0,8)"
-            >
+            <label class="meta" for="buyer-phone">Phone</label>
+            <div class="phone-wrap">
+              <span class="prefix">+65</span>
+              <input id="buyer-phone" name="buyer_phone" required
+                     inputmode="numeric" pattern="^\d{8}$"
+                     minlength="8" maxlength="8"
+                     placeholder="81234567"
+                     oninput="this.value=this.value.replace(/\D/g,'').slice(0,8)">
+            </div>
           </div>
         </div>
-
-        <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px; margin-top:10px">
+    
+        <div class="grid two-col" style="margin-top:10px">
           <div>
             <label class="meta" for="buyer-email">Email</label>
-            <input id="buyer-email" name="buyer_email" required
-       type="email" autocomplete="email"
-       inputmode="email" autocapitalize="off" spellcheck="false"
-       placeholder="you@example.com">
+            <input id="buyer-email" name="buyer_email" required type="email"
+                   autocomplete="email" placeholder="you@example.com">
           </div>
+    
           <div>
             <label class="meta" for="buyer-note">Additional request (optional)</label>
-            <input
-              id="buyer-note"
-              name="buyer_note"
-              placeholder="Wheelchair access, aisle seat, etc.">
+            <input id="buyer-note" name="buyer_note" placeholder="Wheelchair access, aisle seat, etc.">
           </div>
         </div>
+      </div>
+    </div>
 
-        <p class="meta" id="buyer-hint" style="margin-top:8px; display:none"></p>
+        <!-- <p class="meta" id="buyer-hint" style="margin-top:8px; display:none"></p> -->
       </div>
     </div>
 

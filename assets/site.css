@@ -289,21 +289,83 @@ form label.meta{ display:block; margin-top:10px; margin-bottom:4px; }
   outline: none;
 }
 
-.venue-list{ display:grid; gap: 25px; }
-.venue-card{ border:1px solid var(--border); background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.025)); border-radius:12px; padding:12px; }
-.venue-header{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
-.venue-name{ font-weight:800; }
-.venue-meta{ color: var(--muted); font-size: 12px; padding-top: 5px;}
-
-.times{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
-.time-btn{
-  padding:10px 14px; border:1px solid var(--border); border-radius:12px;
-  background: #1b223c;
-  color: #d0d6ff;
-  border: 1px solid #3a4b7a; cursor:pointer; font-weight:600;
+/* === Enhanced Venue Grid & Cards (Adjusted Top Spacing) === */
+.venue-list {
+  display: grid;
+  /* grid-template-columns: 1fr 1fr; */
+  gap: 28px;
+  margin-top: 16px;
 }
-.time-btn:hover{ border-color: var(--accent);  background: #3a4b7a;
-  color: #fff; }
+
+.venue-card {
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+  border-radius: 16px;
+  padding: 16px 22px 20px;   /* ⬅️ reduced top padding from 22px → 16px */
+  box-shadow: 0 4px 18px rgba(0,0,0,0.15);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.venue-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+
+.venue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;        /* ⬅️ tightened bottom gap (10px → 6px) */
+}
+
+.venue-name {
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--text);
+}
+
+.venue-meta {
+  color: var(--muted);
+  font-size: 13px;
+  padding-top: 4px;
+}
+
+/* Time buttons inside cards */
+.times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.time-btn {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.05);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.time-btn:hover {
+  background: rgba(255,255,255,0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.time-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+@media (max-width: 768px) {
+  .venue-list {
+    grid-template-columns: 1fr;
+  }
+}
 
 .booking-drawer{
   margin-top:12px; padding:12px; border-radius:12px;
@@ -463,4 +525,47 @@ a.btn.btn-disabled {
   background: #0f1720;
   color: #9fb3c8;
   border-radius: 12px;
+}
+
+
+.phone-wrap .prefix {
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.phone-wrap input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 1rem;
+  padding: 10px 0;
+  outline: none;
+}
+
+/* Ensure all 2-column grids have balanced width */
+.grid.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* Fix input widths inside cards */
+.card-body input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Prevent phone prefix container from shrinking other columns */
+.phone-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05);
+  border-radius: 6px;
+  padding: 0 10px;
+  width: 100%; /* <-- Add this line */
 }

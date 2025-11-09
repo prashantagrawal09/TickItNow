@@ -52,18 +52,21 @@
           placeholder="you@example.com"
         >
 
-        <label class="meta" for="reg-phone">Phone (+65)</label>
-        <input
-          id="reg-phone"
-          name="phone"
-          required
-          inputmode="numeric"
-          pattern="^\d{8}$"
-          minlength="8"
-          maxlength="8"
-          placeholder="8-digit number"
-          oninput="this.value=this.value.replace(/\D/g,'').slice(0,8)"
-        >
+        <label class="meta" for="reg-phone">Phone</label>
+        <div class="phone-wrap">
+          <span class="prefix">+65</span>
+          <input
+            id="reg-phone"
+            name="phone"
+            required
+            inputmode="numeric"
+            pattern="^\d{8}$"
+            minlength="8"
+            maxlength="8"
+            placeholder="81234567"
+            oninput="this.value=this.value.replace(/\D/g,'').slice(0,8)"
+          >
+        </div>
 
         <label class="meta" for="reg-pass">Password</label>
         <input

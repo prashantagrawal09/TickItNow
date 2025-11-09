@@ -281,7 +281,7 @@ function attachLiveValidationForRegisterForm() {
   if (!nameEl || !phoneEl || !emailEl || !passEl) return;
 
   const nameOK   = v => v.trim().length >= 2;
-  const phoneOK  = v => /^\d{8}$/.test(v.trim());
+  const phoneOK = v => /^\d{8}$/.test(v.trim());
   const emailOK  = el => el.checkValidity();
   const passOK   = v => v.length >= 8 && /[A-Za-z]/.test(v) && /\d/.test(v);
 
@@ -320,13 +320,10 @@ window.bootAvailable = async function bootAvailable(){
   const me = await getCurrentUser(); // {authenticated, name, email, phone}
   if(me.authenticated){
     if(me.name)  nameEl.value  = me.name;
-    if(me.phone) phoneEl.value = me.phone;
-    if(me.email) emailEl.value = me.email;
-    hintEl.style.display = 'block';
-    hintEl.textContent = 'You are signed in. You can edit these details for this booking if needed.';
-  }else{
-    hintEl.style.display = 'block';
-    hintEl.textContent = 'Not signed in — you can fill these now, but you’ll be asked to log in or create an account before confirming.';
+    if (me.phone) {
+      const d = String(me.phone).replace(/\D/g,'');
+      if (d.length >= 8) phoneEl.value = d.slice(-8); // keep last 8 digits only
+    }
   }
 
   // 2) Load rows (your existing logic)

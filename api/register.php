@@ -9,12 +9,12 @@ function back_err($msg){ redirect("../register.html?error=".urlencode($msg)); }
 $full_name = trim($_POST['full_name'] ?? ($_POST['name'] ?? ''));
 $email     = trim($_POST['email'] ?? '');
 
-$rawPhone  = $_POST['phone'] ?? '';
-$digits    = preg_replace('/\D+/', '', $rawPhone);
+$rawPhone = $_POST['phone'] ?? '';
+$digits = preg_replace('/\D+/', '', $rawPhone);
 if (strlen($digits) !== 8) {
-  back_err("Phone must be exactly 8 digits (SG).");
+  back_err("Phone must be exactly 8 digits (Singapore).");
 }
-$phone = '+65 ' . $digits;
+$phone = $digits; // store ONLY the 8 digits
 
 $password  = $_POST['password'] ?? '';
 
