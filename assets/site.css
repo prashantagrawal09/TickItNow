@@ -376,6 +376,21 @@ form label.meta{ display:block; margin-top:10px; margin-bottom:4px; }
 .booking-drawer.open{ display:block; }
 .booking-grid{ display:grid; grid-template-columns: 1fr 1fr auto; gap:10px; }
 .booking-grid select, .booking-grid input{ width:100% }
+.booking-grid .qty-wrap{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.booking-grid .qty-wrap label{
+  font-size:12px;
+  color:#94a3b8;
+}
+.booking-grid .seat-link{
+  align-self:flex-end;
+  justify-content:center;
+  width:100%;
+  text-align:center;
+}
 .dot{ display:inline-block; width:8px; height:8px; border-radius:999px; margin-right:6px; vertical-align:middle }
 .dot-okay{ background:#22c55e }
 .dot-fast{ background:#f59e0b }
@@ -472,6 +487,33 @@ a.btn.btn-disabled {
 
 /* (optional) nice press feedback */
 .time-btn:active { transform: translateY(1px); }
+
+.time-btn-good {
+  background: #d1fae5;
+  border-color: #34d399;
+  color: #065f46;
+}
+.time-btn-medium {
+  background: #fef9c3;
+  border-color: #eab308;
+  color: #854d0e;
+}
+.time-btn-critical {
+  background: #fee2e2;
+  border-color: #f87171;
+  color: #7f1d1d;
+}
+.time-btn-none,
+.time-btn[disabled] {
+  background: #1f2937;
+  border-color: #4b5563;
+  color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.time-btn-none {
+  text-decoration: line-through;
+}
 
 
 .bts-wrap { margin-top: 16px; }

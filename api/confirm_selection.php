@@ -59,6 +59,21 @@ if (!filter_var($buyer_email, FILTER_VALIDATE_EMAIL)) {
 
 $user_id = !empty($_SESSION['user']['id']) ? (int)$_SESSION['user']['id'] : null;
 
+function parseSeatIds($value) {
+  if (!$value) return [];
+  if (is_array($value)) {
+    $raw = $value;
+  } else {
+    $raw = preg_split('/\s*,\s*/', $value);
+  }
+  $out = [];
+  foreach ($raw as $v) {
+    $n = (int)$v;
+    if ($n > 0) $out[] = $n;
+  }
+  return array_values(array_unique($out));
+}
+
 
 function sendBookingEmail($toEmail, $toName, $bookingRef, $total, $items, $buyer) {
   $mail = new PHPMailer(true);
@@ -152,34 +167,64 @@ try {
     throw new Exception("Some selected items were not found in your session.");
   }
 
-  // 2) Lock inventory rows & validate availability
+  foreach ($prefs as &$pref) {
+    $pref['_seat_ids'] = parseSeatIds($pref['seat_ids'] ?? '');
+    $pref['_schedule_id'] = isset($pref['schedule_id']) ? (int)$pref['schedule_id'] : 0;
+    if (!empty($pref['_seat_ids']) && $pref['_schedule_id'] <= 0) {
+      throw new Exception("Seat selection item missing schedule reference.");
+    }
+  }
+  unset($pref);
+
+// 2) Lock inventory rows & validate availability
   $lockInv = $pdo->prepare("
     SELECT id, available_qty
     FROM show_inventory
     WHERE show_id=? AND venue_id=? AND start_at=? AND ticket_class=?
     FOR UPDATE
   ");
-  $insuff = [];
   foreach ($prefs as $p) {
+    $seatIds = $p['_seat_ids'];
+    if ($seatIds) {
+      $placeholders = implode(',', array_fill(0, count($seatIds), '?'));
+      $seatSql = "
+        SELECT bs.seat_id
+        FROM booking_seats bs
+        JOIN bookings b ON b.id = bs.booking_id
+        WHERE bs.schedule_id = ?
+          AND b.status = 'CONFIRMED'
+          AND bs.seat_id IN ($placeholders)
+        FOR UPDATE
+      ";
+      $seatStmt = $pdo->prepare($seatSql);
+      $params = array_merge([(int)$p['_schedule_id']], $seatIds);
+      $seatStmt->execute($params);
+      if ($seatStmt->fetch()) {
+        $pdo->rollBack();
+        echo json_encode(["ok"=>false,"reason"=>"seat_taken","pref_id"=>(int)$p['id']]);
+        exit;
+      }
+      continue;
+    }
     $lockInv->execute([(int)$p['show_id'], $p['venue_id'], $p['start_at'], $p['ticket_class']]);
     $inv = $lockInv->fetch(PDO::FETCH_ASSOC);
     $need = (int)$p['qty'];
     $have = $inv ? (int)$inv['available_qty'] : 0;
-    if ($have < $need) $insuff[] = ["pref_id"=>(int)$p['id'], "have"=>$have, "need"=>$need];
-  }
-  if ($insuff) {
-    $pdo->rollBack();
-    echo json_encode(["ok"=>false,"reason"=>"insufficient","items"=>$insuff]);
-    exit;
+    if ($have < $need) {
+      $pdo->rollBack();
+      echo json_encode(["ok"=>false,"reason"=>"insufficient","pref_id"=>(int)$p['id']]);
+      exit;
+    }
   }
 
-  // 3) Deduct seats ONCE
+// 3) Deduct seats ONCE (non seat-based)
   $deduct = $pdo->prepare("
     UPDATE show_inventory
     SET available_qty = available_qty - ?
     WHERE show_id=? AND venue_id=? AND start_at=? AND ticket_class=? AND available_qty >= ?
   ");
   foreach ($prefs as $p) {
+    if (!empty($p['_seat_ids'])) continue;
     $need = (int)$p['qty'];
     $deduct->execute([$need, (int)$p['show_id'], $p['venue_id'], $p['start_at'], $p['ticket_class'], $need]);
     if ($deduct->rowCount() !== 1) {
@@ -212,6 +257,13 @@ try {
   foreach ($prefs as $p) {
     $insLine->execute([$bookingId, (int)$p['qty'], (float)$p['price']]);
   }
+  $insSeatRow = $pdo->prepare("INSERT INTO booking_seats (booking_id, seat_id, schedule_id) VALUES (?, ?, ?)");
+  foreach ($prefs as $p) {
+    if (empty($p['_seat_ids'])) continue;
+    foreach ($p['_seat_ids'] as $sid) {
+      $insSeatRow->execute([$bookingId, $sid, (int)$p['_schedule_id']]);
+    }
+  }
 
   // 6) Remove the just-booked preferences for this session
   // Remove ALL preferences for this session (not just selected)
@@ -228,6 +280,7 @@ sendBookingEmail(
   array_map(function($p){
     return [
       "show_id"      => (int)$p['show_id'],
+      "schedule_id"  => isset($p['schedule_id']) ? (int)$p['schedule_id'] : 0,
       "venue_name"   => $p['venue_name'],
       "start_at"     => $p['start_at'],
       "ticket_class" => $p['ticket_class'],
@@ -251,14 +304,18 @@ sendBookingEmail(
       "note"  => $buyer_note
     ],
     "items"       => array_map(function($p){
-      $u = (float)$p['price'];  // define $u!
+      $u = (float)$p['price'];
+      $seatLabels = trim($p['seat_labels'] ?? '');
       return [
         "pref_id"      => (int)$p['id'],
         "show_id"      => (int)$p['show_id'],
+        "schedule_id"  => isset($p['schedule_id']) ? (int)$p['schedule_id'] : 0,
         "venue_id"     => $p['venue_id'],
         "venue_name"   => $p['venue_name'],
         "start_at"     => $p['start_at'],
-        "ticket_class" => $p['ticket_class'],
+        "ticket_class" => $seatLabels ? ('Seats: '.$seatLabels) : $p['ticket_class'],
+        "seat_ids"     => $p['_seat_ids'],
+        "seat_labels"  => $seatLabels,
         "qty"          => (int)$p['qty'],
         "unit_price"   => $u,
         "price"        => $u

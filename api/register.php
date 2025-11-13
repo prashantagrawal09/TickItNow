@@ -17,9 +17,13 @@ if (strlen($digits) !== 8) {
 $phone = $digits; // store ONLY the 8 digits
 
 $password  = $_POST['password'] ?? '';
+$confirmPw = $_POST['confirm_password'] ?? '';
 
-if ($full_name === '' || $email === '' || $phone === '' || $password === '') {
+if ($full_name === '' || $email === '' || $phone === '' || $password === '' || $confirmPw === '') {
   back_err("All fields are required.");
+}
+if (!preg_match("/^[A-Za-z][A-Za-z\s'.-]+$/", $full_name)) {
+  back_err("Name can only contain letters, spaces, apostrophes, and hyphens.");
 }
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
   back_err("Invalid email address.");
@@ -27,6 +31,9 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 // Keep server-side stricter than client: ≥8 chars, letters & numbers
 if (strlen($password) < 8 || !preg_match('/[A-Za-z]/', $password) || !preg_match('/\d/', $password)) {
   back_err("Password must be ≥8 chars and include letters & numbers.");
+}
+if ($password !== $confirmPw) {
+  back_err("Passwords do not match.");
 }
 
 try {

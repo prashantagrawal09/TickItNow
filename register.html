@@ -80,6 +80,17 @@
           placeholder="At least 8 characters"
         >
 
+        <label class="meta" for="reg-pass-confirm">Confirm password</label>
+        <input
+          id="reg-pass-confirm"
+          name="confirm_password"
+          type="password"
+          required
+          minlength="8"
+          autocomplete="new-password"
+          placeholder="Re-enter your password"
+        >
+
         <div class="note-box" style="margin:10px 0">
           Password must be <strong>at least 8 characters</strong> and contain <strong>letters and numbers</strong>.
         </div>
@@ -114,34 +125,59 @@
     const email = document.getElementById('reg-email');
     const phone = document.getElementById('reg-phone');
     const pass  = document.getElementById('reg-pass');
+    const pass2 = document.getElementById('reg-pass-confirm');
     const msg   = document.getElementById('reg-msg');
+    const submitBtn = form.querySelector('button[type="submit"]');
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-    const nameOK  = v => v.trim().length >= 2;
+    const nameRegex = /^[A-Za-z][A-Za-z\s'.-]{1,}$/;
+    const nameOK  = v => nameRegex.test(v.trim());
     const phoneOK = v => /^\d{8}$/.test(v.trim());   // exactly 8 digits
     const passOK  = v => /^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(v);
+    const passMatch = () => pass.value === pass2.value;
 
     function setValidity(el, ok, text){
       el.setCustomValidity(ok ? '' : text);
-      el.reportValidity();
+      if (document.activeElement === el) {
+        el.reportValidity();
+      }
     }
 
-    name.addEventListener('input',  () => setValidity(name,  nameOK(name.value),   'Please enter at least 2 characters.'));
+    name.addEventListener('input',  () => setValidity(name,  nameOK(name.value),   'Use only letters/spaces, at least 2 characters.'));
     phone.addEventListener('input', () => setValidity(phone, phoneOK(phone.value), 'Enter exactly 8 digits (SG).'));
     email.addEventListener('input', () => {
       email.value = email.value.trim().toLowerCase();
       setValidity(email, emailRegex.test(email.value), 'Please enter a valid email (e.g., name@site.com).');
     });
-    pass.addEventListener('input',  () => setValidity(pass,  passOK(pass.value),   'Min 8 chars with letters and numbers.'));
+    pass.addEventListener('input',  () => {
+      setValidity(pass,  passOK(pass.value),   'Min 8 chars with letters and numbers.');
+      setValidity(pass2, passMatch(),          'Passwords do not match.');
+    });
+    pass2.addEventListener('input', () => setValidity(pass2, passMatch(), 'Passwords do not match.'));
 
-    [name, phone, email, pass].forEach(el => el.addEventListener('blur', () => el.reportValidity()));
+    function computeValid() {
+      return nameOK(name.value)
+        && phoneOK(phone.value)
+        && emailRegex.test(email.value)
+        && passOK(pass.value)
+        && passMatch();
+    }
+
+    function updateSubmitState() {
+      const ok = computeValid();
+      if (submitBtn) submitBtn.disabled = !ok;
+      return ok;
+    }
+
+    [name, phone, email, pass, pass2].forEach(el => el.addEventListener('input', updateSubmitState));
+    updateSubmitState();
 
     form.addEventListener('submit', (e)=>{
       email.value = email.value.trim().toLowerCase();
-      const ok = nameOK(name.value) && phoneOK(phone.value) && emailRegex.test(email.value) && passOK(pass.value);
+      const ok = updateSubmitState();
       if(!ok){
         e.preventDefault();
-        [name, phone, email, pass].forEach(el => el.reportValidity());
+        [name, phone, email, pass, pass2].forEach(el => el.reportValidity());
         return;
       }
       // Optional message area reset
@@ -153,7 +189,12 @@
     const err = u.searchParams.get('error');
     if(err){
       msg.style.color = '#f88';
-      msg.textContent = decodeURIComponent(err);
+      const text = decodeURIComponent(err);
+      if (/already exists/i.test(text)) {
+        msg.innerHTML = `${text} <a href="login.html" style="color:#93c5fd;text-decoration:underline">Log in?</a>`;
+      } else {
+        msg.textContent = text;
+      }
     }
     const notice = u.searchParams.get('notice');
     if(notice){

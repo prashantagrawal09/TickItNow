@@ -43,6 +43,29 @@ function fmtDateTimeLocal(isoLocal){
   if(!isoLocal) return '';
   return new Date(isoLocal).toLocaleString();
 }
+function cleanTicketLabel(label){
+  if(!label) return '';
+  const lower = String(label).toLowerCase();
+  if (lower === 'seat selection') return '';
+  if (lower.startsWith('seatsel-')) return '';
+  return label;
+}
+function cleanVenueMeta(text){
+  if(!text) return '';
+  return String(text)
+    .replace(/•\s*Seat selection/gi, '')
+    .replace(/SeatSel-[a-z0-9]+/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/•\s*$/g, '')
+    .trim()
+    .replace(/\s*•\s*/g, ' • ');
+}
+function displayTicketClass(label){
+  if(!label) return '—';
+  const lower = String(label).toLowerCase();
+  if (lower.startsWith('seatsel-')) return 'Seat selection';
+  return label;
+}
 
 // ---------- Page-specific bootstraps ----------
 
@@ -89,10 +112,15 @@ async function renderPreferences(){
       setReviewAvailabilityState(false);
       return;
     }
-    tbody.innerHTML = items.map(x=>`
+    tbody.innerHTML = items.map(x=>{
+      const metaParts = [];
+      if (x.venue) metaParts.push(x.venue);
+      if (x.seat_labels) metaParts.push('Seats: ' + x.seat_labels);
+      const metaHtml = metaParts.length ? `<div class="meta">${metaParts.join(' • ')}</div>` : '';
+      return `
       <tr>
         <td><span class="badge">#${x.rank_pos}</span></td>
-        <td>${x.title}<div class="meta">${x.venue}</div></td>
+        <td>${x.title}${metaHtml}</td>
         <td>${fmtDateTimeLocal(x.start_at)}</td>
         <td>${x.tickets || 2}</td>
         <td>$${Number(x.price||0).toFixed(2)}</td>
@@ -102,15 +130,23 @@ async function renderPreferences(){
           <button class="btn danger" onclick="PREFS.remove(${x.id}, '${x.start_at}'); renderPreferences()">Remove</button>
         </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
     setReviewAvailabilityState(true);
     return;
   }
 
-  tbody.innerHTML = rows.map((x,i)=>`
+  tbody.innerHTML = rows.map((x,i)=>{
+    const metaParts = [];
+    const venueMeta = cleanVenueMeta(x.venue_name);
+    const seatMeta = x.seat_labels ? `Seats: ${x.seat_labels}` : cleanTicketLabel(x.ticket_class);
+    if (venueMeta) metaParts.push(venueMeta);
+    if (seatMeta) metaParts.push(seatMeta);
+    const metaHtml = metaParts.length ? `<div class="meta">${metaParts.join(' • ')}</div>` : '';
+    return `
     <tr>
       <td><span class="badge">#${i+1}</span></td>
-      <td>${x.show_title || ('Show #' + x.show_id)}<div class="meta">${x.venue_name}</div></td>
+      <td>${x.show_title || ('Show #' + x.show_id)}${metaHtml}</td>
       <td>${fmtDateTimeLocal(x.start_at_iso)}</td>
       <td>${x.qty}</td>
       <td>$${Number(x.price||0).toFixed(2)}</td>
@@ -120,7 +156,8 @@ async function renderPreferences(){
         <button class="btn danger" onclick="removePref(${x.id})">Remove</button>
       </td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 }
 // --- Review Availability guard (block if no prefs) ---
 async function countServerPrefs() {
@@ -156,10 +193,10 @@ function initReviewAvailabilityGuard() {
   if (!btn) return;
 
   // Click interception
-  btn.addEventListener('click', async (e) => {
-    // quick localStorage check first
-    const localCount = (Array.isArray(PREFS.get()) ? PREFS.get().length : 0);
-    if (localCount > 0 || _lastPrefCount > 0) return; // allow
+    btn.addEventListener('click', async (e) => {
+      // quick localStorage check first
+      const localCount = (Array.isArray(PREFS.get()) ? PREFS.get().length : 0);
+      if (localCount > 0 || _lastPrefCount > 0) return; // allow
 
     e.preventDefault();
 
@@ -342,7 +379,8 @@ window.bootAvailable = async function bootAvailable(){
         show_title: x.title || ('Show #' + x.id),
         venue_name: x.venue,
         start_at_iso: (x.start_at || '').replace(' ', 'T'),
-        ticket_class: x.ticket_class || 'Standard',
+        ticket_class: x.ticket_class || '',
+        seat_labels: x.seat_labels || '',
         qty: x.tickets || 2,
         price: x.price || 0,
         available_qty: 999,
@@ -351,26 +389,24 @@ window.bootAvailable = async function bootAvailable(){
     }
   }
   if(!Array.isArray(rows) || rows.length === 0){
-    tbody.innerHTML = `<tr><td colspan="6" class="meta">No items in preferences.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" class="meta">No items in preferences.</td></tr>`;
     return;
   }
-  tbody.innerHTML = rows.map((x,i)=>{
-    const available = !!Number(x.is_available);
-    const statusBadge = available
-      ? `<span class="badge" style="border-color:#204f36;color:#7ae2a0;background:#0a2217">Available</span>`
-      : `<span class="badge" style="border-color:#44202d;color:#f7a5b2;background:#220b12">Not Available</span>`;
-    const checkbox = available
-      ? `<input type="checkbox" name="select_item_ids" value="${x.id}">`
-      : `<input type="checkbox" disabled title="Insufficient seats">`;
+  tbody.innerHTML = rows.map((x)=>{
+    const checkbox = `<input type="checkbox" name="select_item_ids" value="${x.id}">`;
+    const venueMeta = cleanVenueMeta(x.venue_name);
+    const seatMeta = x.seat_labels ? `Seats: ${x.seat_labels}` : cleanTicketLabel(x.ticket_class);
+    const metaParts = [];
+    if (venueMeta) metaParts.push(venueMeta);
+    if (seatMeta) metaParts.push(seatMeta);
+    const metaHtml = metaParts.length ? `<div class="meta">${metaParts.join(' • ')}</div>` : '';
     return `
       <tr>
-        <td><span class="badge">#${x.rank || i+1}</span></td>
         <td>${x.show_title || ('Show #' + x.show_id)}
-          <div class="meta">${x.venue_name}${x.ticket_class ? ' • ' + x.ticket_class : ''}</div>
+          ${metaHtml}
         </td>
         <td>${fmtDateTimeLocal(x.start_at_iso)}</td>
         <td>${x.qty}</td>
-        <td>${statusBadge} ${typeof x.available_qty!=="undefined" ? `<span class="meta" style="margin-left:6px">(Left: ${x.available_qty})</span>` : ''}</td>
         <td class="right">${checkbox}</td>
       </tr>`;
   }).join('');
@@ -407,21 +443,8 @@ window.bootAvailable = async function bootAvailable(){
   
     // --- Save confirmation payload ---
     try {
-      sessionStorage.setItem("tickitnow_last_booking", JSON.stringify({
-        when: new Date().toISOString(),
-        booking_ref: json.booking_ref,
-        buyer: json.buyer,
-        total: json.total,
-        items: (json.items||[]).map(x=>({
-          show_id: x.show_id,
-          venue_name: x.venue_name,
-          start_at: x.start_at,
-          ticket_class: x.ticket_class,
-          qty: x.qty,
-          unit_price: x.unit_price,  // <- from server
-          price: x.unit_price
-        }))
-      }));
+      const payload = Object.assign({ when: new Date().toISOString() }, json);
+      sessionStorage.setItem("tickitnow_last_booking", JSON.stringify(payload));
     } catch (e) {
       console.error('Failed to write sessionStorage:', e);
     }
@@ -458,13 +481,17 @@ window.bootConfirm = function bootConfirm(){
       return;
     }
 
-    const total = obj.total ?? obj.items.reduce((s,x)=> s + (x.qty||2) * (x.unit_price||0), 0);
+    const items = Array.isArray(obj.items) ? obj.items : [];
+    const total = (typeof obj.total === 'number')
+      ? obj.total
+      : items.reduce((s,x)=> s + ( (x.qty||1) * (x.unit_price||x.price||0) ), 0);
+    const whenText = obj.when ? new Date(obj.when).toLocaleString() : new Date().toLocaleString();
 
     target.innerHTML = `
       <div class="card"><div class="card-body">
         <h2>🎉 Booking Confirmed</h2>
         <p class="meta">Reference: <strong>${obj.booking_ref || '(pending)'}</strong></p>
-        <p class="meta">Booked at ${new Date(obj.when).toLocaleString()}</p>
+        <p class="meta">Booked at ${whenText}</p>
 
         ${obj.buyer ? `
         <div class="note-box" style="margin:10px 0">
@@ -476,16 +503,22 @@ window.bootConfirm = function bootConfirm(){
         <table class="table" style="margin-top:10px">
           <thead><tr><th>Show#</th><th>When</th><th>Venue</th><th>Class</th><th>Qty</th><th>Price</th></tr></thead>
           <tbody>
-            ${(obj.items||[]).map(x=>`
-              <tr>
-                <td>${x.show_id}</td>
-                <td>${x.start_at}</td>
-                <td>${x.venue_name}</td>
-                <td>${x.ticket_class}</td>
-                <td>${x.qty}</td>
-                <td>$${Number(x.unit_price||x.price||0).toFixed(2)}</td>
-              </tr>
-            `).join("")}
+            ${items.map(x=>{
+              const venueSpan = cleanVenueMeta(x.venue_name);
+              const seatClass = displayTicketClass(x.ticket_class);
+              const seatText = x.seat_labels ? `Seats: ${x.seat_labels}` : seatClass;
+              const whenTxt = x.start_at ? fmtDateTimeLocal(x.start_at.replace(' ','T')) : '-';
+              return `
+                <tr>
+                  <td>${x.show_id ?? '—'}</td>
+                  <td>${whenTxt}</td>
+                  <td>${venueSpan || '—'}</td>
+                  <td>${seatText}</td>
+                  <td>${x.qty ?? '—'}</td>
+                  <td>$${Number(x.unit_price||x.price||0).toFixed(2)}</td>
+                </tr>
+              `;
+            }).join("")}
           </tbody>
         </table>
 
@@ -728,7 +761,7 @@ function bootShowDetails(){
   fetch(`api/get_schedule.php?show_id=${id}&start_days=0&end_days=4`)
     .then(r => r.json())
     .then(rows => {
-      // rows: [{ show_id, venue_id, venue, start_at }]
+      // rows: [{ show_id, venue_id, venue, start_at, schedule_id, available_qty, free_seats }]
       const byDate = {};
       for (const r of rows) {
         // Treat as LOCAL by swapping space to 'T' (no 'Z'), avoids previous off-by-one issues
@@ -736,10 +769,13 @@ function bootShowDetails(){
         const dateKey = fmtLocalDate(d);
         const vid = r.venue_id;
         const label = to12h(d);
+        const scheduleId = r.schedule_id ? parseInt(r.schedule_id, 10) : null;
+        const available = typeof r.available_qty !== 'undefined' ? parseInt(r.available_qty, 10) : null;
+        const freeSeats = typeof r.free_seats !== 'undefined' ? parseInt(r.free_seats, 10) : null;
 
         byDate[dateKey] ||= {};
         byDate[dateKey][vid] ||= { id: vid, name: r.venue, times: [] };
-        byDate[dateKey][vid].times.push({ label, at: r.start_at });
+        byDate[dateKey][vid].times.push({ label, at: r.start_at, scheduleId, available, freeSeats });
       }
       // normalize to arrays + sort
       groupedByDate = {};
@@ -766,34 +802,64 @@ function bootShowDetails(){
       venueList.innerHTML = `<div class="meta">No showtimes for ${key}.</div>`;
       return;
     }
-    venueList.innerHTML = rows.map(v=>`
-      <article class="venue-card" data-venue="${v.id}">
+    venueList.innerHTML = rows.map(v=>{
+      const safeName = (v.name || '').replace(/"/g, '&quot;');
+      return `
+      <article class="venue-card" data-venue="${v.id}" data-venue-name="${safeName}">
         <div class="venue-header">
           <div>
             <div class="venue-name">${v.name}</div>
             <div class="venue-meta">Allows cancellation</div>
           </div>
-          <button class="btn ghost btn-sm" aria-label="Favourite">♡</button>
         </div>
 
         <div class="times">
-          ${v.times.map(t=>`<button class="time-btn" data-time="${t.label}" data-start="${t.at}" data-venue="${v.id}">${t.label}</button>`).join('')}
+          ${v.times.map(t=>{
+            let btnCls = 'time-btn';
+            let prefix = '';
+            let dataAttrs = `data-time="${t.label}" data-start="${t.at}" data-venue="${v.id}" data-schedule="${t.scheduleId || ''}"`;
+            const free = typeof t.freeSeats === 'number' ? t.freeSeats : (typeof t.available === 'number' ? t.available : null);
+            if (free !== null && !Number.isNaN(free)) {
+              dataAttrs += ` data-free="${free}"`;
+              if (free <= 0) {
+                btnCls += ' time-btn-none';
+                prefix = '✕ ';
+                dataAttrs += ' data-empty="true"';
+              } else if (free < 15) {
+                btnCls += ' time-btn-critical';
+              } else if (free <= 50) {
+                btnCls += ' time-btn-medium';
+              } else {
+                btnCls += ' time-btn-good';
+              }
+            }
+            const disabledAttr = (free !== null && free <= 0) ? 'disabled' : '';
+            return `<button class="${btnCls}" ${dataAttrs} ${disabledAttr}>${prefix}${t.label}</button>`;
+          }).join('')}
         </div>
 
         <div class="booking-drawer" id="drawer-${v.id}">
           <div class="booking-grid">
-            <select id="class-${v.id}">
-              <option value="Standard|12.00">Standard — $12.00</option>
-              <option value="Premium|15.50">Premium — $15.50</option>
-              <option value="VIP|18.00">VIP — $18.00</option>
-            </select>
-            <select id="qty-${v.id}">${[1,2,3,4,5,6].map(n=>`<option>${n}</option>`).join('')}</select>
-            <button class="btn primary" id="add-${v.id}">Add</button>
+            <div class="qty-wrap">
+              <label for="class-${v.id}">Ticket type</label>
+              <select id="class-${v.id}">
+                <option value="Standard|12.00">Standard — $12.00</option>
+                <option value="Premium|15.50">Premium — $15.50</option>
+                <option value="VIP|18.00">VIP — $18.00</option>
+              </select>
+            </div>
+            <div class="qty-wrap">
+              <label for="qty-${v.id}" class="meta">Qty</label>
+              <input id="qty-${v.id}" type="number" value="1" min="1" max="99" step="1">
+            </div>
+            <a class="btn primary seat-link" data-seat-link href="#" style="display:none">Select seats</a>
           </div>
+          <div class="meta" id="avail-${v.id}" style="margin-top:4px;"></div>
           <div class="meta" id="sum-${v.id}" style="margin-top:8px"></div>
         </div>
       </article>
-    `).join('');
+    `;
+    }).join('');
   }
 
   // date click
@@ -808,6 +874,9 @@ function bootShowDetails(){
   venueList.addEventListener('click', async (e)=>{
     const tbtn = e.target.closest('.time-btn');
     if(tbtn){
+      if (tbtn.dataset.empty === 'true' || tbtn.disabled) {
+        return;
+      }
       const venueId = tbtn.dataset.venue;
       const drawer = document.getElementById(`drawer-${venueId}`);
 
@@ -825,69 +894,83 @@ function bootShowDetails(){
 
       drawer.dataset.time  = tbtn.dataset.time;   // "hh:mm AM/PM"
       drawer.dataset.start = tbtn.dataset.start;  // "YYYY-MM-DD HH:MM:SS" from DB
+      drawer.dataset.scheduleId = tbtn.dataset.schedule || '';
+      drawer.dataset.free = tbtn.dataset.free || '';
+      if (card) {
+        drawer.dataset.venueCode = card.dataset.venue || '';
+        drawer.dataset.venueName = card.dataset.venueName || '';
+      }
       drawer.classList.add('open');
 
       const cls = document.getElementById(`class-${venueId}`);
       const qty = document.getElementById(`qty-${venueId}`);
       const sum = document.getElementById(`sum-${venueId}`);
+      const seatLink = drawer.querySelector('[data-seat-link]');
+      const availInfo = document.getElementById(`avail-${venueId}`);
+      const maxAvailable = drawer.dataset.free ? parseInt(drawer.dataset.free, 10) : null;
+      const addButton = document.getElementById(`add-${venueId}`);
+      if (maxAvailable !== null && maxAvailable > 0) {
+        qty.setAttribute('max', String(maxAvailable));
+        if (availInfo) availInfo.textContent = `Seats left: ${maxAvailable}`;
+        if (addButton) addButton.disabled = false;
+      } else if (maxAvailable === 0) {
+        qty.setAttribute('max', '0');
+        qty.value = 0;
+        if (availInfo) availInfo.textContent = 'No seats left for this time.';
+        if (addButton) addButton.disabled = true;
+      } else {
+        qty.removeAttribute('max');
+        if (availInfo) availInfo.textContent = '';
+        if (addButton) addButton.disabled = false;
+      }
+      const syncSeatLink = ()=>{
+        if (!seatLink) return;
+        if (drawer.dataset.scheduleId && (maxAvailable === null || maxAvailable > 0)) {
+          let qtyVal = Math.max(1, parseInt(qty.value, 10) || 1);
+          if (maxAvailable !== null && qtyVal > maxAvailable) {
+            qtyVal = maxAvailable;
+            qty.value = qtyVal;
+            alert('Only ' + maxAvailable + ' seat' + (maxAvailable>1?'s':'') + ' remain for this time.');
+          }
+          drawer.dataset.qty = qtyVal;
+          seatLink.style.display = 'inline-flex';
+          const venueCode = drawer.dataset.venueCode || '';
+          const venueName = drawer.dataset.venueName || '';
+          seatLink.href = `seat_selection.php?show_id=${encodeURIComponent(drawer.dataset.scheduleId)}&qty=${qtyVal}&venue_id=${encodeURIComponent(venueCode)}&venue_name=${encodeURIComponent(venueName)}`;
+        } else {
+          seatLink.style.display = 'none';
+          seatLink.removeAttribute('href');
+        }
+      };
       const upd = ()=>{
         const [label, price] = cls.value.split('|');
-        const q = parseInt(qty.value,10);
-        sum.textContent = `${label} × ${q} at ${drawer.dataset.time} — Total $${(q*parseFloat(price)).toFixed(2)}`;
+        let q = Math.max(1, parseInt(qty.value,10) || 1);
+        if (maxAvailable !== null && q > maxAvailable) {
+          q = maxAvailable > 0 ? maxAvailable : 0;
+          qty.value = q;
+          if (maxAvailable > 0) {
+            alert('Only ' + maxAvailable + ' seat' + (maxAvailable>1?'s':'') + ' remain for this time.');
+          }
+        }
+        drawer.dataset.qty = q;
+        if (maxAvailable !== null && maxAvailable <= 0) {
+          sum.textContent = 'Sold out';
+        } else {
+          sum.textContent = `${label} × ${q} at ${drawer.dataset.time} — Total $${(q*parseFloat(price)).toFixed(2)}`;
+        }
+        syncSeatLink();
       };
-      cls.onchange = upd; qty.onchange = upd; upd();
+      cls.addEventListener('change', upd);
+      qty.addEventListener('input', upd);
+      upd();
       return;
     }
 
     // add to preferences (DB + keep LS sync if you want)
     const addBtn = e.target.id?.startsWith('add-') ? e.target : null;
     if(addBtn){
-      const venueId = addBtn.id.replace('add-','');
-      const drawer = document.getElementById(`drawer-${venueId}`);
-      const [label, priceStr] = document.getElementById(`class-${venueId}`).value.split('|');
-      const qty = parseInt(document.getElementById(`qty-${venueId}`).value,10);
-      const startAt = drawer.dataset.start; // exact DB datetime
-      const card = addBtn.closest('.venue-card');
-      const venueName = card.querySelector('.venue-name')?.textContent?.trim() || venueId;
-
-      const payload = {
-        show_id: parseInt(id, 10),
-        venue_id: venueId,
-        venue_name: venueName,
-        start_at: startAt,          // <- use exact value from API
-        ticket_class: label,
-        qty: qty,
-        price: parseFloat(priceStr)
-      };
-
-      try{
-        const r = await fetch('api/add_preference.php', {
-          method:'POST',
-          headers:{ 'Content-Type':'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const json = await r.json();
-        if(!r.ok || json.error){
-          alert(json.error || 'Failed to save.');
-          return;
-        }
-        // optional local mirror
-        if(window.PREFS?.add){
-          PREFS.add({
-            id: payload.show_id,
-            title: qsel('#show-title')?.textContent || `Show #${payload.show_id}`,
-            venue: payload.venue_name,
-            start_at: payload.start_at,
-            tickets: payload.qty,
-            price: payload.price
-          });
-        }
-        qsel(`#drawer-${venueId}`).classList.remove('open');
-        alert('Added to preferences!');
-      }catch(err){
-        console.error(err);
-        alert('Network error saving preference');
-      }
+      alert('Seat selection now happens via the “Select seats” button. Please use it to continue.');
+      return;
     }
   });
 }
@@ -1015,6 +1098,27 @@ window.bootAccount = async function bootAccount(){
         </table>
       </div></div>
     </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-body">
+        <h2>Change Password</h2>
+        <form id="password-form" style="margin-top:12px">
+          <label class="meta" for="pw-current">Current password</label>
+          <input id="pw-current" name="current_password" type="password" required autocomplete="current-password">
+
+          <label class="meta" for="pw-new" style="margin-top:10px">New password</label>
+          <input id="pw-new" name="new_password" type="password" required minlength="8" autocomplete="new-password">
+
+          <label class="meta" for="pw-confirm" style="margin-top:10px">Confirm new password</label>
+          <input id="pw-confirm" name="confirm_password" type="password" required minlength="8" autocomplete="new-password">
+
+          <div class="flex" style="gap:10px;margin-top:12px">
+            <button class="btn primary" type="submit">Update password</button>
+          </div>
+        </form>
+        <p class="meta" id="password-msg" style="margin-top:10px"></p>
+      </div>
+    </div>
   `;
 
   // 4) Fetch order history
@@ -1080,4 +1184,42 @@ window.bootAccount = async function bootAccount(){
       </tr>
     `;
   }).join('');
+
+  const pwForm = pane.querySelector('#password-form');
+  const pwMsg  = pane.querySelector('#password-msg');
+  if (pwForm) {
+    pwForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!pwMsg) return;
+      pwMsg.textContent = '';
+      pwMsg.style.color = '#9ca3af';
+      const fd = new FormData(pwForm);
+      const newPw = fd.get('new_password') || '';
+      const confirmPw = fd.get('confirm_password') || '';
+      if (newPw !== confirmPw) {
+        pwMsg.style.color = '#f87171';
+        pwMsg.textContent = 'New passwords do not match.';
+        return;
+      }
+      let btn = pwForm.querySelector('button[type="submit"]');
+      if (btn) btn.disabled = true;
+      try {
+        const res = await fetch('api/change_password.php', { method: 'POST', body: fd });
+        const data = await res.json().catch(() => ({}));
+        if (btn) btn.disabled = false;
+        if (!res.ok || data.ok === false) {
+          pwMsg.style.color = '#f87171';
+          pwMsg.textContent = data.error || 'Unable to update password.';
+          return;
+        }
+        pwMsg.style.color = '#34d399';
+        pwMsg.textContent = data.message || 'Password updated successfully.';
+        pwForm.reset();
+      } catch (err) {
+        if (btn) btn.disabled = false;
+        pwMsg.style.color = '#f87171';
+        pwMsg.textContent = 'Network error. Please try again.';
+      }
+    });
+  }
 };

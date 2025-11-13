@@ -5,10 +5,13 @@ require_once "_session_boot.php";
 $sql = "
   SELECT p.id,
          p.show_id,
+         p.schedule_id,
          s.title AS show_title,
          p.venue_id,
          p.venue_name,
          p.ticket_class,
+         p.seat_ids,
+         p.seat_labels,
          p.qty,
          p.price,
          -- ISO 8601 without Z so browsers treat it as LOCAL when we append 'T'

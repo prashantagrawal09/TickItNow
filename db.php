@@ -1,5 +1,5 @@
 <?php
-$dsn = "mysql:host=localhost;dbname=TickItnow;charset=utf8mb4";
+$dsn = "mysql:host=localhost;dbname=TickItNow;charset=utf8mb4";
 $user = "root";
 $pass = "";
 $options = [

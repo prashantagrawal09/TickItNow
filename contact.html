@@ -34,7 +34,7 @@
     <div class="card">
       <div class="card-body">
         <!-- IMPORTANT: For base version, use PHP action -->
-        <form action="contact_submit.php" method="post" novalidate>
+        <form action="contact_submit.php" method="post" novalidate id="contact-form">
           <div style="margin-bottom:12px">
             <label for="topic" class="meta">Topic</label>
             <select id="topic" name="topic" required>
@@ -117,11 +117,44 @@
       <a href="terms.html">Terms &amp; Conditions</a>
       <a href="privacy.html">Privacy Policy</a>
       <a href="contact.html">Contact Us</a>
-      <a href="#">FAQs</a>
     </div>
     <p class="copyright">© 2025 TickItNow. All rights reserved.</p>
   </div>
 </footer>
 <script src="assets/app.js"></script>
+<script>
+(function(){
+  const form = document.getElementById('contact-form');
+  if(!form) return;
+  const name = document.getElementById('full_name');
+  const email = document.getElementById('email');
+  const phone = document.getElementById('phone');
+  const nameRegex = /^[A-Za-z][A-Za-z\s'.-]+$/;
+  const phoneRegex = /^\+?\d{8,15}$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+  function setValidity(el, ok, msg){
+    el.setCustomValidity(ok ? '' : msg);
+    if (document.activeElement === el) el.reportValidity();
+    return ok;
+  }
+
+  name.addEventListener('input', () => setValidity(name, nameRegex.test(name.value.trim()), 'Please enter a valid name (letters only).'));
+  email.addEventListener('input', () => setValidity(email, emailRegex.test(email.value.trim()), 'Enter a valid email.'));
+  phone.addEventListener('input', () => setValidity(phone, phoneRegex.test(phone.value.trim()), 'Enter 8–15 digits (optionally starting with +).'));
+
+  form.addEventListener('submit', (e) => {
+    const ok = nameRegex.test(name.value.trim())
+      && emailRegex.test(email.value.trim())
+      && phoneRegex.test(phone.value.trim());
+    if (!ok) {
+      e.preventDefault();
+      name.reportValidity();
+      email.reportValidity();
+      phone.reportValidity();
+    }
+  });
+})();
+</script>
 </body>
 </html>

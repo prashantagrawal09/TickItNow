@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Nov 07, 2025 at 02:09 PM
+-- Generation Time: Nov 13, 2025 at 11:52 PM
 -- Server version: 10.4.21-MariaDB
 -- PHP Version: 8.1.6
 
@@ -29,13 +29,15 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `bookings` (
   `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `show_id` int(11) DEFAULT NULL,
   `booking_ref` varchar(50) NOT NULL,
   `buyer_name` varchar(120) NOT NULL,
   `buyer_email` varchar(190) NOT NULL,
   `buyer_phone` varchar(40) NOT NULL,
   `buyer_note` varchar(255) DEFAULT NULL,
   `booked_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `status` varchar(20) NOT NULL DEFAULT 'CONFIRMED',
   `total_amount` decimal(10,2) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -43,18 +45,15 @@ CREATE TABLE `bookings` (
 -- Dumping data for table `bookings`
 --
 
-INSERT INTO `bookings` (`id`, `user_id`, `booking_ref`, `buyer_name`, `buyer_email`, `buyer_phone`, `buyer_note`, `booked_at`, `total_amount`) VALUES
-(5, 1, 'TKN-251103-591BA8', 'Prashant Agrawal', 'prashantagrawal0934@gmail.com', '+65 81770015', '', '2025-11-03 18:43:05', '54.00'),
-(7, 1, 'TKN-251103-1CFD49', 'Prashant Agrawal', 'prashantagrawal0934@gmail.com', '+6581770015', '', '2025-11-03 18:44:23', '46.50'),
-(8, 1, 'TKN-251103-802653', 'Prashant Agrawal', 'prashantagrawal0934@gmail.com', '+6581770015', '', '2025-11-03 18:44:43', '46.50'),
-(9, 1, 'TKN-251103-D47078', 'Prashant Agrawal', 'prashantagrawal0934@gmail.com', '+6581770015', '', '2025-11-03 18:45:25', '31.00'),
-(10, 1, 'TKN-251107-9D3981', 'Prashant Agrawal', 'prashantagrawal0934@gmail.com', '+6581770015', '', '2025-11-07 08:13:36', '43.00'),
-(11, 1, 'TKN-251107-9D57A1', 'Prashant Agrawal', 'prashantagrawal0934@gmail.com', '+6581770015', '', '2025-11-07 08:26:00', '43.00'),
-(12, 1, 'TKN-251107-FE5805', 'Prashant Agrawal', 'prashantagrawal0934@gmail.com', '+6581770015', '', '2025-11-07 08:27:52', '12.00'),
-(13, 1, 'TKN-251107-E69A54', 'Prashant Agrawal', 'prashantagrawal0934@gmail.com', '+6581770015', '', '2025-11-07 08:32:58', '12.00'),
-(14, 1, 'TKN-251107-30E3F8', 'Prashant Agrawal', 'prashantagrawal0934@gmail.com', '+6581770015', '', '2025-11-07 08:33:15', '12.00'),
-(15, 1, 'TKN-251107-120C29', 'Prashant Agrawal', 'prashantagrawal0934@gmail.com', '+6581770015', '', '2025-11-07 12:37:59', '211.50'),
-(16, 1, 'TKN-251107-441C0E', 'Prashant Agrawal', 'prashantagrawal0934@gmail.com', '+6581770015', '', '2025-11-07 12:40:53', '46.50');
+INSERT INTO `bookings` (`id`, `user_id`, `show_id`, `booking_ref`, `buyer_name`, `buyer_email`, `buyer_phone`, `buyer_note`, `booked_at`, `status`, `total_amount`) VALUES
+(1, 3, NULL, 'TKN-251108-E22478', 'Prashant Agrawal', 'prashant017@e.ntu.edu.sg', '+65 81770015', '', '2025-11-08 22:05:22', 'CONFIRMED', '36.00'),
+(2, 3, NULL, 'TKN-251109-87512C', 'Prashant Agrawal', 'prashantagrawal0934@gmail.com', '81770015', '', '2025-11-09 13:16:55', 'CONFIRMED', '86.00'),
+(3, 3, NULL, 'TKN-251109-D80BC0', 'Prashant Agrawal', 'prashant017@e.ntu.edu.sg', '81770015', '', '2025-11-09 13:18:17', 'CONFIRMED', '12.00'),
+(4, NULL, NULL, 'TKN-251109-F89D4F', 'Ram', 'prashantagrawal91929290@gmail.com', '81772223', 'Aisle seat', '2025-11-09 13:24:53', 'CONFIRMED', '62.00'),
+(5, 6, 158, 'SEAT-1238CC', 'ramalingam', 'rama2k2@gmail.com', '86848374', '', '2025-11-13 13:05:24', 'CONFIRMED', '90.00'),
+(6, 6, 166, 'SEAT-011E69', 'ramalingam', 'rama2k2@gmail.com', '86848374', '', '2025-11-13 13:07:18', 'CONFIRMED', '17.00'),
+(7, 6, 166, 'SEAT-90432C', 'ramalingam', 'rama2k2@gmail.com', '86848374', '', '2025-11-13 13:20:22', 'CONFIRMED', '1088.00'),
+(8, 6, 166, 'SEAT-090E86', 'ramalingam', 'rama2k2@gmail.com', '86848374', '', '2025-11-13 13:23:45', 'CONFIRMED', '374.00');
 
 -- --------------------------------------------------------
 
@@ -75,28 +74,126 @@ CREATE TABLE `booking_items` (
 --
 
 INSERT INTO `booking_items` (`id`, `booking_id`, `showtime_id`, `tickets`, `price_each`) VALUES
-(3, 5, NULL, 3, '18.00'),
-(5, 7, NULL, 1, '15.50'),
-(6, 7, NULL, 1, '15.50'),
-(7, 7, NULL, 1, '15.50'),
-(8, 8, NULL, 1, '15.50'),
-(9, 8, NULL, 1, '15.50'),
-(10, 8, NULL, 1, '15.50'),
-(11, 9, NULL, 1, '15.50'),
-(12, 9, NULL, 1, '15.50'),
-(13, 10, NULL, 1, '15.50'),
-(14, 10, NULL, 1, '15.50'),
-(15, 10, NULL, 1, '12.00'),
-(16, 11, NULL, 1, '15.50'),
-(17, 11, NULL, 1, '15.50'),
-(18, 11, NULL, 1, '12.00'),
-(19, 12, NULL, 1, '12.00'),
-(20, 13, NULL, 1, '12.00'),
-(21, 14, NULL, 1, '12.00'),
-(22, 15, NULL, 6, '15.50'),
-(23, 15, NULL, 4, '18.00'),
-(24, 15, NULL, 3, '15.50'),
-(25, 16, NULL, 3, '15.50');
+(1, 1, NULL, 3, '12.00'),
+(2, 2, NULL, 4, '15.50'),
+(3, 2, NULL, 2, '12.00'),
+(4, 3, NULL, 1, '12.00'),
+(5, 4, NULL, 4, '15.50'),
+(6, 5, NULL, 6, '15.00'),
+(7, 6, NULL, 1, '17.00'),
+(8, 7, NULL, 64, '17.00'),
+(9, 8, NULL, 22, '17.00');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `booking_seats`
+--
+
+CREATE TABLE `booking_seats` (
+  `booking_id` int(11) NOT NULL,
+  `seat_id` int(11) NOT NULL,
+  `schedule_id` int(11) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Dumping data for table `booking_seats`
+--
+
+INSERT INTO `booking_seats` (`booking_id`, `seat_id`) VALUES
+(5, 141),
+(5, 153),
+(5, 181),
+(5, 193),
+(5, 233),
+(5, 273),
+(6, 146),
+(7, 2),
+(7, 6),
+(7, 10),
+(7, 14),
+(7, 18),
+(7, 22),
+(7, 26),
+(7, 30),
+(7, 34),
+(7, 38),
+(7, 42),
+(7, 46),
+(7, 50),
+(7, 54),
+(7, 58),
+(7, 62),
+(7, 66),
+(7, 70),
+(7, 74),
+(7, 78),
+(7, 82),
+(7, 86),
+(7, 90),
+(7, 94),
+(7, 98),
+(7, 102),
+(7, 106),
+(7, 110),
+(7, 114),
+(7, 118),
+(7, 122),
+(7, 126),
+(7, 130),
+(7, 134),
+(7, 138),
+(7, 142),
+(7, 150),
+(7, 154),
+(7, 158),
+(7, 162),
+(7, 166),
+(7, 170),
+(7, 178),
+(7, 182),
+(7, 186),
+(7, 190),
+(7, 194),
+(7, 198),
+(7, 202),
+(7, 206),
+(7, 210),
+(7, 222),
+(7, 226),
+(7, 230),
+(7, 234),
+(7, 238),
+(7, 254),
+(7, 258),
+(7, 262),
+(7, 266),
+(7, 270),
+(7, 274),
+(7, 278),
+(7, 298),
+(8, 174),
+(8, 214),
+(8, 218),
+(8, 242),
+(8, 246),
+(8, 250),
+(8, 282),
+(8, 286),
+(8, 290),
+(8, 294),
+(8, 310),
+(8, 322),
+(8, 326),
+(8, 330),
+(8, 334),
+(8, 338),
+(8, 346),
+(8, 350),
+(8, 362),
+(8, 370),
+(8, 378),
+(8, 382);
 
 -- --------------------------------------------------------
 
@@ -114,6 +211,40 @@ CREATE TABLE `contact_messages` (
   `message` text NOT NULL,
   `created_at` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Dumping data for table `contact_messages`
+--
+
+INSERT INTO `contact_messages` (`id`, `topic`, `full_name`, `email`, `phone`, `booking_ref`, `message`, `created_at`) VALUES
+(1, 'Payment & refund', 'Ram', 'rama2k2@gmail.com', '+6586848374', '', 'help. send help', '2025-11-14 03:52:53');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `halls`
+--
+
+CREATE TABLE `halls` (
+  `hall_id` int(11) NOT NULL,
+  `hall_name` varchar(120) NOT NULL,
+  `hall_code` varchar(32) NOT NULL,
+  `total_rows` tinyint(4) NOT NULL DEFAULT 10,
+  `total_cols` tinyint(4) NOT NULL DEFAULT 10,
+  `venue_id` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Dumping data for table `halls`
+--
+
+INSERT INTO `halls` (`hall_id`, `hall_name`, `hall_code`, `total_rows`, `total_cols`, `venue_id`, `created_at`, `updated_at`) VALUES
+(1, 'Orchard Cineplex A', 'inox', 10, 10, 1, '2025-11-13 16:43:28', '2025-11-13 16:43:28'),
+(2, 'Marina Theatre Hall 2', 'pvr1', 10, 10, 2, '2025-11-13 16:43:28', '2025-11-13 16:43:28'),
+(3, 'Jewel Cinema 5', 'pvr2', 10, 10, 3, '2025-11-13 16:43:28', '2025-11-13 16:43:28'),
+(4, 'Tampines Stage 1', 'pvr3', 10, 10, 4, '2025-11-13 16:43:28', '2025-11-13 16:43:28');
 
 -- --------------------------------------------------------
 
@@ -141,10 +272,13 @@ CREATE TABLE `preference_items` (
   `session_id` varchar(64) NOT NULL,
   `user_id` int(11) DEFAULT NULL,
   `show_id` int(11) NOT NULL,
+  `schedule_id` int(11) NOT NULL DEFAULT 0,
   `venue_id` varchar(32) NOT NULL,
   `venue_name` varchar(160) NOT NULL,
   `start_at` datetime NOT NULL,
   `ticket_class` varchar(32) NOT NULL,
+  `seat_ids` text DEFAULT NULL,
+  `seat_labels` text DEFAULT NULL,
   `qty` int(11) NOT NULL DEFAULT 1,
   `price` decimal(8,2) NOT NULL DEFAULT 0.00,
   `rank` int(11) DEFAULT NULL,
@@ -155,12 +289,14 @@ CREATE TABLE `preference_items` (
 -- Dumping data for table `preference_items`
 --
 
-INSERT INTO `preference_items` (`id`, `session_id`, `user_id`, `show_id`, `venue_id`, `venue_name`, `start_at`, `ticket_class`, `qty`, `price`, `rank`, `created_at`) VALUES
-(22, '7rirkhc809gggaqqu3lio79sc6', NULL, 2, 'inox', 'Orchard Cineplex A', '2025-11-03 23:25:00', 'Standard', 1, '12.00', 1, '2025-11-03 10:06:58'),
-(23, '7rirkhc809gggaqqu3lio79sc6', NULL, 4, 'inox', 'Orchard Cineplex A', '2025-11-05 22:00:00', 'Premium', 4, '15.50', 2, '2025-11-03 10:13:06'),
-(44, 'ce3835ad21107690b8b4611fa4c846c2', NULL, 3, 'pvr2', 'Jewel Cinema 5', '2025-11-07 15:00:00', 'Premium', 6, '15.50', 1, '2025-11-07 12:17:10'),
-(45, 'ce3835ad21107690b8b4611fa4c846c2', NULL, 1, 'inox', 'Orchard Cineplex A', '2025-11-08 13:30:00', 'Premium', 3, '15.50', 3, '2025-11-07 12:36:53'),
-(46, 'ce3835ad21107690b8b4611fa4c846c2', NULL, 3, 'pvr2', 'Jewel Cinema 5', '2025-11-07 18:00:00', 'VIP', 4, '18.00', 2, '2025-11-07 12:37:07');
+INSERT INTO `preference_items` (`id`, `session_id`, `user_id`, `show_id`, `venue_id`, `venue_name`, `start_at`, `ticket_class`, `seat_ids`, `seat_labels`, `qty`, `price`, `rank`, `created_at`) VALUES
+(22, '7rirkhc809gggaqqu3lio79sc6', NULL, 2, 'inox', 'Orchard Cineplex A', '2025-11-03 23:25:00', 'Standard', NULL, NULL, 1, '12.00', 1, '2025-11-03 10:06:58'),
+(23, '7rirkhc809gggaqqu3lio79sc6', NULL, 4, 'inox', 'Orchard Cineplex A', '2025-11-05 22:00:00', 'Premium', NULL, NULL, 4, '15.50', 2, '2025-11-03 10:13:06'),
+(84, 'ce3835ad21107690b8b4611fa4c846c2', NULL, 1, 'inox', 'Orchard Cineplex A', '2025-11-10 10:30:00', 'Standard', NULL, NULL, 5, '12.00', 4, '2025-11-09 13:53:17'),
+(85, 'ce3835ad21107690b8b4611fa4c846c2', NULL, 1, 'inox', 'Orchard Cineplex A', '2025-11-10 10:30:00', 'Premium', NULL, NULL, 2, '15.50', 5, '2025-11-09 13:53:24'),
+(95, '270d9338b748c35e099723d2a4a3b717', NULL, 2, 'pvr1', 'Marina Theatre Hall 2 • Seats: G8', '2025-11-14 20:00:00', 'Seat selection', NULL, NULL, 1, '17.00', 3, '2025-11-13 21:06:19'),
+(100, '270d9338b748c35e099723d2a4a3b717', NULL, 2, 'pvr1', 'Marina Theatre Hall 2 • Seats: B10, D10, F8, F9, G8, G10, H10, I8, I9, I10, J8, J9, J10', '2025-11-14 20:00:00', 'SeatSel-2ad14c72', NULL, NULL, 13, '17.00', 2, '2025-11-13 22:17:37'),
+(101, '270d9338b748c35e099723d2a4a3b717', NULL, 1, 'inox', 'Orchard Cineplex A', '2025-11-15 20:30:00', 'SeatSel-8ee', NULL, NULL, 1, '16.00', 4, '2025-11-13 21:56:34');
 
 -- --------------------------------------------------------
 
@@ -215,7 +351,466 @@ INSERT INTO `schedules` (`id`, `show_id`, `venue`, `start_at`, `price`) VALUES
 (32, 2, 'Orchard Cineplex A', '2025-11-06 20:00:00', '14.50'),
 (33, 3, 'Marina Theatre Hall 2', '2025-11-06 21:15:00', '15.00'),
 (34, 4, 'Jewel Cinema 5', '2025-11-06 16:45:00', '11.00'),
-(35, 5, 'Tampines Stage 1', '2025-11-06 18:30:00', '12.00');
+(35, 5, 'Tampines Stage 1', '2025-11-06 18:30:00', '12.00'),
+(157, 1, 'Orchard Cineplex A', '2025-11-14 13:00:00', '12.50'),
+(158, 1, 'Orchard Cineplex A', '2025-11-14 18:30:00', '15.00'),
+(159, 1, 'Orchard Cineplex A', '2025-11-15 12:45:00', '12.50'),
+(160, 1, 'Orchard Cineplex A', '2025-11-15 20:30:00', '16.00'),
+(161, 1, 'Orchard Cineplex A', '2025-11-16 14:10:00', '12.00'),
+(162, 1, 'Orchard Cineplex A', '2025-11-16 19:50:00', '15.50'),
+(163, 1, 'Orchard Cineplex A', '2025-11-17 13:20:00', '12.50'),
+(164, 1, 'Orchard Cineplex A', '2025-11-17 21:10:00', '17.00'),
+(165, 2, 'Marina Theatre Hall 2', '2025-11-14 14:00:00', '13.50'),
+(166, 2, 'Marina Theatre Hall 2', '2025-11-14 20:00:00', '17.00'),
+(167, 2, 'Marina Theatre Hall 2', '2025-11-15 15:10:00', '14.00'),
+(168, 2, 'Marina Theatre Hall 2', '2025-11-15 21:30:00', '17.50'),
+(169, 2, 'Marina Theatre Hall 2', '2025-11-16 14:20:00', '13.50'),
+(170, 2, 'Marina Theatre Hall 2', '2025-11-16 19:40:00', '16.50'),
+(171, 2, 'Marina Theatre Hall 2', '2025-11-17 13:45:00', '14.00'),
+(172, 2, 'Marina Theatre Hall 2', '2025-11-17 20:10:00', '17.50'),
+(173, 3, 'Jewel Cinema 5', '2025-11-14 12:30:00', '12.00'),
+(174, 3, 'Jewel Cinema 5', '2025-11-14 19:15:00', '15.50'),
+(175, 3, 'Jewel Cinema 5', '2025-11-15 13:20:00', '12.50'),
+(176, 3, 'Jewel Cinema 5', '2025-11-15 18:50:00', '16.00'),
+(177, 3, 'Jewel Cinema 5', '2025-11-16 11:45:00', '11.50'),
+(178, 3, 'Jewel Cinema 5', '2025-11-16 20:05:00', '16.50'),
+(179, 3, 'Jewel Cinema 5', '2025-11-17 12:10:00', '12.00'),
+(180, 3, 'Jewel Cinema 5', '2025-11-17 21:00:00', '17.00'),
+(181, 4, 'Tampines Stage 1', '2025-11-14 15:00:00', '11.50'),
+(182, 4, 'Tampines Stage 1', '2025-11-14 21:10:00', '15.00'),
+(183, 4, 'Tampines Stage 1', '2025-11-15 14:25:00', '11.50'),
+(184, 4, 'Tampines Stage 1', '2025-11-15 19:45:00', '14.50'),
+(185, 4, 'Tampines Stage 1', '2025-11-16 16:00:00', '12.00'),
+(186, 4, 'Tampines Stage 1', '2025-11-16 20:40:00', '15.50'),
+(187, 4, 'Tampines Stage 1', '2025-11-17 13:30:00', '11.50'),
+(188, 4, 'Tampines Stage 1', '2025-11-17 19:20:00', '14.50'),
+(189, 5, 'Orchard Cineplex A', '2025-11-14 11:50:00', '13.00'),
+(190, 5, 'Orchard Cineplex A', '2025-11-14 17:40:00', '16.00'),
+(191, 5, 'Orchard Cineplex A', '2025-11-15 12:05:00', '13.00'),
+(192, 5, 'Orchard Cineplex A', '2025-11-15 18:15:00', '16.50'),
+(193, 5, 'Orchard Cineplex A', '2025-11-16 11:30:00', '12.50'),
+(194, 5, 'Orchard Cineplex A', '2025-11-16 20:20:00', '17.00'),
+(195, 5, 'Orchard Cineplex A', '2025-11-17 14:05:00', '13.00'),
+(196, 5, 'Orchard Cineplex A', '2025-11-17 20:55:00', '17.00');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `seats`
+--
+
+CREATE TABLE `seats` (
+  `seat_id` int(11) NOT NULL,
+  `hall_id` int(11) NOT NULL,
+  `seat_row` char(1) NOT NULL,
+  `seat_col` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Dumping data for table `seats`
+--
+
+INSERT INTO `seats` (`seat_id`, `hall_id`, `seat_row`, `seat_col`) VALUES
+(1, 1, 'A', 1),
+(2, 2, 'A', 1),
+(3, 3, 'A', 1),
+(4, 4, 'A', 1),
+(5, 1, 'B', 1),
+(6, 2, 'B', 1),
+(7, 3, 'B', 1),
+(8, 4, 'B', 1),
+(9, 1, 'C', 1),
+(10, 2, 'C', 1),
+(11, 3, 'C', 1),
+(12, 4, 'C', 1),
+(13, 1, 'D', 1),
+(14, 2, 'D', 1),
+(15, 3, 'D', 1),
+(16, 4, 'D', 1),
+(17, 1, 'E', 1),
+(18, 2, 'E', 1),
+(19, 3, 'E', 1),
+(20, 4, 'E', 1),
+(21, 1, 'F', 1),
+(22, 2, 'F', 1),
+(23, 3, 'F', 1),
+(24, 4, 'F', 1),
+(25, 1, 'G', 1),
+(26, 2, 'G', 1),
+(27, 3, 'G', 1),
+(28, 4, 'G', 1),
+(29, 1, 'H', 1),
+(30, 2, 'H', 1),
+(31, 3, 'H', 1),
+(32, 4, 'H', 1),
+(33, 1, 'I', 1),
+(34, 2, 'I', 1),
+(35, 3, 'I', 1),
+(36, 4, 'I', 1),
+(37, 1, 'J', 1),
+(38, 2, 'J', 1),
+(39, 3, 'J', 1),
+(40, 4, 'J', 1),
+(41, 1, 'A', 2),
+(42, 2, 'A', 2),
+(43, 3, 'A', 2),
+(44, 4, 'A', 2),
+(45, 1, 'B', 2),
+(46, 2, 'B', 2),
+(47, 3, 'B', 2),
+(48, 4, 'B', 2),
+(49, 1, 'C', 2),
+(50, 2, 'C', 2),
+(51, 3, 'C', 2),
+(52, 4, 'C', 2),
+(53, 1, 'D', 2),
+(54, 2, 'D', 2),
+(55, 3, 'D', 2),
+(56, 4, 'D', 2),
+(57, 1, 'E', 2),
+(58, 2, 'E', 2),
+(59, 3, 'E', 2),
+(60, 4, 'E', 2),
+(61, 1, 'F', 2),
+(62, 2, 'F', 2),
+(63, 3, 'F', 2),
+(64, 4, 'F', 2),
+(65, 1, 'G', 2),
+(66, 2, 'G', 2),
+(67, 3, 'G', 2),
+(68, 4, 'G', 2),
+(69, 1, 'H', 2),
+(70, 2, 'H', 2),
+(71, 3, 'H', 2),
+(72, 4, 'H', 2),
+(73, 1, 'I', 2),
+(74, 2, 'I', 2),
+(75, 3, 'I', 2),
+(76, 4, 'I', 2),
+(77, 1, 'J', 2),
+(78, 2, 'J', 2),
+(79, 3, 'J', 2),
+(80, 4, 'J', 2),
+(81, 1, 'A', 3),
+(82, 2, 'A', 3),
+(83, 3, 'A', 3),
+(84, 4, 'A', 3),
+(85, 1, 'B', 3),
+(86, 2, 'B', 3),
+(87, 3, 'B', 3),
+(88, 4, 'B', 3),
+(89, 1, 'C', 3),
+(90, 2, 'C', 3),
+(91, 3, 'C', 3),
+(92, 4, 'C', 3),
+(93, 1, 'D', 3),
+(94, 2, 'D', 3),
+(95, 3, 'D', 3),
+(96, 4, 'D', 3),
+(97, 1, 'E', 3),
+(98, 2, 'E', 3),
+(99, 3, 'E', 3),
+(100, 4, 'E', 3),
+(101, 1, 'F', 3),
+(102, 2, 'F', 3),
+(103, 3, 'F', 3),
+(104, 4, 'F', 3),
+(105, 1, 'G', 3),
+(106, 2, 'G', 3),
+(107, 3, 'G', 3),
+(108, 4, 'G', 3),
+(109, 1, 'H', 3),
+(110, 2, 'H', 3),
+(111, 3, 'H', 3),
+(112, 4, 'H', 3),
+(113, 1, 'I', 3),
+(114, 2, 'I', 3),
+(115, 3, 'I', 3),
+(116, 4, 'I', 3),
+(117, 1, 'J', 3),
+(118, 2, 'J', 3),
+(119, 3, 'J', 3),
+(120, 4, 'J', 3),
+(121, 1, 'A', 4),
+(122, 2, 'A', 4),
+(123, 3, 'A', 4),
+(124, 4, 'A', 4),
+(125, 1, 'B', 4),
+(126, 2, 'B', 4),
+(127, 3, 'B', 4),
+(128, 4, 'B', 4),
+(129, 1, 'C', 4),
+(130, 2, 'C', 4),
+(131, 3, 'C', 4),
+(132, 4, 'C', 4),
+(133, 1, 'D', 4),
+(134, 2, 'D', 4),
+(135, 3, 'D', 4),
+(136, 4, 'D', 4),
+(137, 1, 'E', 4),
+(138, 2, 'E', 4),
+(139, 3, 'E', 4),
+(140, 4, 'E', 4),
+(141, 1, 'F', 4),
+(142, 2, 'F', 4),
+(143, 3, 'F', 4),
+(144, 4, 'F', 4),
+(145, 1, 'G', 4),
+(146, 2, 'G', 4),
+(147, 3, 'G', 4),
+(148, 4, 'G', 4),
+(149, 1, 'H', 4),
+(150, 2, 'H', 4),
+(151, 3, 'H', 4),
+(152, 4, 'H', 4),
+(153, 1, 'I', 4),
+(154, 2, 'I', 4),
+(155, 3, 'I', 4),
+(156, 4, 'I', 4),
+(157, 1, 'J', 4),
+(158, 2, 'J', 4),
+(159, 3, 'J', 4),
+(160, 4, 'J', 4),
+(161, 1, 'A', 5),
+(162, 2, 'A', 5),
+(163, 3, 'A', 5),
+(164, 4, 'A', 5),
+(165, 1, 'B', 5),
+(166, 2, 'B', 5),
+(167, 3, 'B', 5),
+(168, 4, 'B', 5),
+(169, 1, 'C', 5),
+(170, 2, 'C', 5),
+(171, 3, 'C', 5),
+(172, 4, 'C', 5),
+(173, 1, 'D', 5),
+(174, 2, 'D', 5),
+(175, 3, 'D', 5),
+(176, 4, 'D', 5),
+(177, 1, 'E', 5),
+(178, 2, 'E', 5),
+(179, 3, 'E', 5),
+(180, 4, 'E', 5),
+(181, 1, 'F', 5),
+(182, 2, 'F', 5),
+(183, 3, 'F', 5),
+(184, 4, 'F', 5),
+(185, 1, 'G', 5),
+(186, 2, 'G', 5),
+(187, 3, 'G', 5),
+(188, 4, 'G', 5),
+(189, 1, 'H', 5),
+(190, 2, 'H', 5),
+(191, 3, 'H', 5),
+(192, 4, 'H', 5),
+(193, 1, 'I', 5),
+(194, 2, 'I', 5),
+(195, 3, 'I', 5),
+(196, 4, 'I', 5),
+(197, 1, 'J', 5),
+(198, 2, 'J', 5),
+(199, 3, 'J', 5),
+(200, 4, 'J', 5),
+(201, 1, 'A', 6),
+(202, 2, 'A', 6),
+(203, 3, 'A', 6),
+(204, 4, 'A', 6),
+(205, 1, 'B', 6),
+(206, 2, 'B', 6),
+(207, 3, 'B', 6),
+(208, 4, 'B', 6),
+(209, 1, 'C', 6),
+(210, 2, 'C', 6),
+(211, 3, 'C', 6),
+(212, 4, 'C', 6),
+(213, 1, 'D', 6),
+(214, 2, 'D', 6),
+(215, 3, 'D', 6),
+(216, 4, 'D', 6),
+(217, 1, 'E', 6),
+(218, 2, 'E', 6),
+(219, 3, 'E', 6),
+(220, 4, 'E', 6),
+(221, 1, 'F', 6),
+(222, 2, 'F', 6),
+(223, 3, 'F', 6),
+(224, 4, 'F', 6),
+(225, 1, 'G', 6),
+(226, 2, 'G', 6),
+(227, 3, 'G', 6),
+(228, 4, 'G', 6),
+(229, 1, 'H', 6),
+(230, 2, 'H', 6),
+(231, 3, 'H', 6),
+(232, 4, 'H', 6),
+(233, 1, 'I', 6),
+(234, 2, 'I', 6),
+(235, 3, 'I', 6),
+(236, 4, 'I', 6),
+(237, 1, 'J', 6),
+(238, 2, 'J', 6),
+(239, 3, 'J', 6),
+(240, 4, 'J', 6),
+(241, 1, 'A', 7),
+(242, 2, 'A', 7),
+(243, 3, 'A', 7),
+(244, 4, 'A', 7),
+(245, 1, 'B', 7),
+(246, 2, 'B', 7),
+(247, 3, 'B', 7),
+(248, 4, 'B', 7),
+(249, 1, 'C', 7),
+(250, 2, 'C', 7),
+(251, 3, 'C', 7),
+(252, 4, 'C', 7),
+(253, 1, 'D', 7),
+(254, 2, 'D', 7),
+(255, 3, 'D', 7),
+(256, 4, 'D', 7),
+(257, 1, 'E', 7),
+(258, 2, 'E', 7),
+(259, 3, 'E', 7),
+(260, 4, 'E', 7),
+(261, 1, 'F', 7),
+(262, 2, 'F', 7),
+(263, 3, 'F', 7),
+(264, 4, 'F', 7),
+(265, 1, 'G', 7),
+(266, 2, 'G', 7),
+(267, 3, 'G', 7),
+(268, 4, 'G', 7),
+(269, 1, 'H', 7),
+(270, 2, 'H', 7),
+(271, 3, 'H', 7),
+(272, 4, 'H', 7),
+(273, 1, 'I', 7),
+(274, 2, 'I', 7),
+(275, 3, 'I', 7),
+(276, 4, 'I', 7),
+(277, 1, 'J', 7),
+(278, 2, 'J', 7),
+(279, 3, 'J', 7),
+(280, 4, 'J', 7),
+(281, 1, 'A', 8),
+(282, 2, 'A', 8),
+(283, 3, 'A', 8),
+(284, 4, 'A', 8),
+(285, 1, 'B', 8),
+(286, 2, 'B', 8),
+(287, 3, 'B', 8),
+(288, 4, 'B', 8),
+(289, 1, 'C', 8),
+(290, 2, 'C', 8),
+(291, 3, 'C', 8),
+(292, 4, 'C', 8),
+(293, 1, 'D', 8),
+(294, 2, 'D', 8),
+(295, 3, 'D', 8),
+(296, 4, 'D', 8),
+(297, 1, 'E', 8),
+(298, 2, 'E', 8),
+(299, 3, 'E', 8),
+(300, 4, 'E', 8),
+(301, 1, 'F', 8),
+(302, 2, 'F', 8),
+(303, 3, 'F', 8),
+(304, 4, 'F', 8),
+(305, 1, 'G', 8),
+(306, 2, 'G', 8),
+(307, 3, 'G', 8),
+(308, 4, 'G', 8),
+(309, 1, 'H', 8),
+(310, 2, 'H', 8),
+(311, 3, 'H', 8),
+(312, 4, 'H', 8),
+(313, 1, 'I', 8),
+(314, 2, 'I', 8),
+(315, 3, 'I', 8),
+(316, 4, 'I', 8),
+(317, 1, 'J', 8),
+(318, 2, 'J', 8),
+(319, 3, 'J', 8),
+(320, 4, 'J', 8),
+(321, 1, 'A', 9),
+(322, 2, 'A', 9),
+(323, 3, 'A', 9),
+(324, 4, 'A', 9),
+(325, 1, 'B', 9),
+(326, 2, 'B', 9),
+(327, 3, 'B', 9),
+(328, 4, 'B', 9),
+(329, 1, 'C', 9),
+(330, 2, 'C', 9),
+(331, 3, 'C', 9),
+(332, 4, 'C', 9),
+(333, 1, 'D', 9),
+(334, 2, 'D', 9),
+(335, 3, 'D', 9),
+(336, 4, 'D', 9),
+(337, 1, 'E', 9),
+(338, 2, 'E', 9),
+(339, 3, 'E', 9),
+(340, 4, 'E', 9),
+(341, 1, 'F', 9),
+(342, 2, 'F', 9),
+(343, 3, 'F', 9),
+(344, 4, 'F', 9),
+(345, 1, 'G', 9),
+(346, 2, 'G', 9),
+(347, 3, 'G', 9),
+(348, 4, 'G', 9),
+(349, 1, 'H', 9),
+(350, 2, 'H', 9),
+(351, 3, 'H', 9),
+(352, 4, 'H', 9),
+(353, 1, 'I', 9),
+(354, 2, 'I', 9),
+(355, 3, 'I', 9),
+(356, 4, 'I', 9),
+(357, 1, 'J', 9),
+(358, 2, 'J', 9),
+(359, 3, 'J', 9),
+(360, 4, 'J', 9),
+(361, 1, 'A', 10),
+(362, 2, 'A', 10),
+(363, 3, 'A', 10),
+(364, 4, 'A', 10),
+(365, 1, 'B', 10),
+(366, 2, 'B', 10),
+(367, 3, 'B', 10),
+(368, 4, 'B', 10),
+(369, 1, 'C', 10),
+(370, 2, 'C', 10),
+(371, 3, 'C', 10),
+(372, 4, 'C', 10),
+(373, 1, 'D', 10),
+(374, 2, 'D', 10),
+(375, 3, 'D', 10),
+(376, 4, 'D', 10),
+(377, 1, 'E', 10),
+(378, 2, 'E', 10),
+(379, 3, 'E', 10),
+(380, 4, 'E', 10),
+(381, 1, 'F', 10),
+(382, 2, 'F', 10),
+(383, 3, 'F', 10),
+(384, 4, 'F', 10),
+(385, 1, 'G', 10),
+(386, 2, 'G', 10),
+(387, 3, 'G', 10),
+(388, 4, 'G', 10),
+(389, 1, 'H', 10),
+(390, 2, 'H', 10),
+(391, 3, 'H', 10),
+(392, 4, 'H', 10),
+(393, 1, 'I', 10),
+(394, 2, 'I', 10),
+(395, 3, 'I', 10),
+(396, 4, 'I', 10),
+(397, 1, 'J', 10),
+(398, 2, 'J', 10),
+(399, 3, 'J', 10),
+(400, 4, 'J', 10);
 
 -- --------------------------------------------------------
 
@@ -248,7 +843,7 @@ INSERT INTO `shows` (`id`, `title`, `synopsis`, `genre`, `rating`, `duration`, `
 (7, 'The Wolf of Wall Street', 'Greed, excess, and chaos on Wall Street.', 'Biography', 'R', '2h 59m', 'assets/posters/wolf.jpeg', 'https://www.youtube.com/watch?v=iszwuX1AK6A'),
 (8, 'Interstellar', 'A journey through space to save humanity.', 'Sci-Fi', 'PG13', '2h 49m', 'assets/posters/interstellar.jpeg', 'https://www.youtube.com/watch?v=zSWdZVtXT7E'),
 (9, 'Spider-Man', 'An ordinary teen discovers extraordinary power.', 'Action', 'PG13', '2h 10m', 'assets/posters/spiderman.jpeg', 'https://www.youtube.com/watch?v=t06RUxPbp_c'),
-(10, 'Hacksaw Ridge', 'A medic’s courage turns the tide on the bloodiest battlefield.', 'War', 'R', '2h 19m', 'assets/posters/hacksaw.jpeg', 'https://www.youtube.com/watch?v=s2-1hz1juBI');
+(10, 'Hacksaw Ridge', 'A medic’s courage turns the tide on the bloodiest battlefield.', 'War', 'R', '2h 19m', 'assets/posters/hacksaw_.jpeg', 'https://www.youtube.com/watch?v=s2-1hz1juBI');
 
 -- --------------------------------------------------------
 
@@ -286,36 +881,46 @@ CREATE TABLE `show_inventory` (
 --
 
 INSERT INTO `show_inventory` (`id`, `show_id`, `venue_id`, `start_at`, `ticket_class`, `available_qty`, `updated_at`) VALUES
-(1, 1, 'inox', '2025-11-07 10:00:00', 'Standard', 20, '2025-11-07 11:26:00'),
-(2, 1, 'inox', '2025-11-07 13:00:00', 'Premium', 15, '2025-11-07 11:26:00'),
-(3, 1, 'inox', '2025-11-07 16:00:00', 'VIP', 10, '2025-11-07 11:26:00'),
-(4, 2, 'pvr1', '2025-11-07 11:00:00', 'Standard', 25, '2025-11-07 11:26:00'),
-(5, 2, 'pvr1', '2025-11-07 14:00:00', 'Premium', 15, '2025-11-07 11:26:00'),
-(6, 2, 'pvr1', '2025-11-07 17:30:00', 'VIP', 8, '2025-11-07 11:26:00'),
-(7, 3, 'pvr2', '2025-11-07 12:00:00', 'Standard', 20, '2025-11-07 11:26:00'),
-(8, 3, 'pvr2', '2025-11-07 15:00:00', 'Premium', 9, '2025-11-07 12:37:59'),
-(9, 3, 'pvr2', '2025-11-07 18:00:00', 'VIP', 6, '2025-11-07 12:37:59'),
-(10, 4, 'pvr3', '2025-11-07 13:00:00', 'Standard', 18, '2025-11-07 11:26:00'),
-(11, 4, 'pvr3', '2025-11-07 16:00:00', 'Premium', 12, '2025-11-07 11:26:00'),
-(12, 4, 'pvr3', '2025-11-07 19:00:00', 'VIP', 8, '2025-11-07 11:26:00'),
-(13, 5, 'inox', '2025-11-07 14:00:00', 'Standard', 25, '2025-11-07 11:26:00'),
-(14, 5, 'inox', '2025-11-07 17:00:00', 'Premium', 15, '2025-11-07 11:26:00'),
-(15, 5, 'inox', '2025-11-07 20:00:00', 'VIP', 10, '2025-11-07 11:26:00'),
-(16, 1, 'inox', '2025-11-08 10:30:00', 'Standard', 20, '2025-11-07 11:26:00'),
-(17, 1, 'inox', '2025-11-08 13:30:00', 'Premium', 9, '2025-11-07 12:40:53'),
-(18, 1, 'inox', '2025-11-08 16:30:00', 'VIP', 10, '2025-11-07 11:26:00'),
-(19, 2, 'pvr1', '2025-11-08 11:30:00', 'Standard', 25, '2025-11-07 11:26:00'),
-(20, 2, 'pvr1', '2025-11-08 14:30:00', 'Premium', 15, '2025-11-07 11:26:00'),
-(21, 2, 'pvr1', '2025-11-08 17:45:00', 'VIP', 8, '2025-11-07 11:26:00'),
-(22, 3, 'pvr2', '2025-11-08 12:30:00', 'Standard', 20, '2025-11-07 11:26:00'),
-(23, 3, 'pvr2', '2025-11-08 15:30:00', 'Premium', 15, '2025-11-07 11:26:00'),
-(24, 3, 'pvr2', '2025-11-08 18:30:00', 'VIP', 10, '2025-11-07 11:26:00'),
-(25, 4, 'pvr3', '2025-11-08 13:30:00', 'Standard', 18, '2025-11-07 11:26:00'),
-(26, 4, 'pvr3', '2025-11-08 16:30:00', 'Premium', 12, '2025-11-07 11:26:00'),
-(27, 4, 'pvr3', '2025-11-08 19:30:00', 'VIP', 8, '2025-11-07 11:26:00'),
-(28, 5, 'inox', '2025-11-08 14:30:00', 'Standard', 25, '2025-11-07 11:26:00'),
-(29, 5, 'inox', '2025-11-08 17:30:00', 'Premium', 15, '2025-11-07 11:26:00'),
-(30, 5, 'inox', '2025-11-08 20:30:00', 'VIP', 10, '2025-11-07 11:26:00');
+(1, 1, 'inox', '2025-11-14 13:00:00', 'Standard', 100, '2025-11-13 19:13:30'),
+(2, 1, 'inox', '2025-11-14 18:30:00', 'Premium', 90, '2025-11-13 19:13:30'),
+(3, 1, 'inox', '2025-11-15 12:45:00', 'Standard', 100, '2025-11-13 19:13:30'),
+(4, 1, 'inox', '2025-11-15 20:30:00', 'VIP', 60, '2025-11-13 19:13:30'),
+(5, 1, 'inox', '2025-11-16 14:10:00', 'Standard', 100, '2025-11-13 19:13:30'),
+(6, 1, 'inox', '2025-11-16 19:50:00', 'Premium', 90, '2025-11-13 19:13:30'),
+(7, 1, 'inox', '2025-11-17 13:20:00', 'Standard', 100, '2025-11-13 19:13:30'),
+(8, 1, 'inox', '2025-11-17 21:10:00', 'VIP', 60, '2025-11-13 19:13:30'),
+(9, 2, 'pvr1', '2025-11-14 14:00:00', 'Standard', 110, '2025-11-13 19:13:30'),
+(10, 2, 'pvr1', '2025-11-14 20:00:00', 'VIP', 55, '2025-11-13 19:13:30'),
+(11, 2, 'pvr1', '2025-11-15 15:10:00', 'Premium', 85, '2025-11-13 19:13:30'),
+(12, 2, 'pvr1', '2025-11-15 21:30:00', 'VIP', 55, '2025-11-13 19:13:30'),
+(13, 2, 'pvr1', '2025-11-16 14:20:00', 'Standard', 110, '2025-11-13 19:13:30'),
+(14, 2, 'pvr1', '2025-11-16 19:40:00', 'Premium', 85, '2025-11-13 19:13:30'),
+(15, 2, 'pvr1', '2025-11-17 13:45:00', 'Standard', 110, '2025-11-13 19:13:30'),
+(16, 2, 'pvr1', '2025-11-17 20:10:00', 'VIP', 55, '2025-11-13 19:13:30'),
+(17, 3, 'pvr2', '2025-11-14 12:30:00', 'Standard', 95, '2025-11-13 19:13:30'),
+(18, 3, 'pvr2', '2025-11-14 19:15:00', 'Premium', 80, '2025-11-13 19:13:30'),
+(19, 3, 'pvr2', '2025-11-15 13:20:00', 'Premium', 80, '2025-11-13 19:13:30'),
+(20, 3, 'pvr2', '2025-11-15 18:50:00', 'VIP', 50, '2025-11-13 19:13:30'),
+(21, 3, 'pvr2', '2025-11-16 11:45:00', 'Standard', 95, '2025-11-13 19:13:30'),
+(22, 3, 'pvr2', '2025-11-16 20:05:00', 'VIP', 50, '2025-11-13 19:13:30'),
+(23, 3, 'pvr2', '2025-11-17 12:10:00', 'Standard', 95, '2025-11-13 19:13:30'),
+(24, 3, 'pvr2', '2025-11-17 21:00:00', 'VIP', 50, '2025-11-13 19:13:30'),
+(25, 4, 'pvr3', '2025-11-14 15:00:00', 'Standard', 120, '2025-11-13 19:13:30'),
+(26, 4, 'pvr3', '2025-11-14 21:10:00', 'Premium', 90, '2025-11-13 19:13:30'),
+(27, 4, 'pvr3', '2025-11-15 14:25:00', 'Standard', 120, '2025-11-13 19:13:30'),
+(28, 4, 'pvr3', '2025-11-15 19:45:00', 'Premium', 90, '2025-11-13 19:13:30'),
+(29, 4, 'pvr3', '2025-11-16 16:00:00', 'Standard', 120, '2025-11-13 19:13:30'),
+(30, 4, 'pvr3', '2025-11-16 20:40:00', 'VIP', 65, '2025-11-13 19:13:30'),
+(31, 4, 'pvr3', '2025-11-17 13:30:00', 'Standard', 120, '2025-11-13 19:13:30'),
+(32, 4, 'pvr3', '2025-11-17 19:20:00', 'Premium', 90, '2025-11-13 19:13:30'),
+(33, 5, 'inox', '2025-11-14 11:50:00', 'Standard', 100, '2025-11-13 19:13:30'),
+(34, 5, 'inox', '2025-11-14 17:40:00', 'Premium', 90, '2025-11-13 19:13:30'),
+(35, 5, 'inox', '2025-11-15 12:05:00', 'Standard', 100, '2025-11-13 19:13:30'),
+(36, 5, 'inox', '2025-11-15 18:15:00', 'VIP', 60, '2025-11-13 19:13:30'),
+(37, 5, 'inox', '2025-11-16 11:30:00', 'Standard', 100, '2025-11-13 19:13:30'),
+(38, 5, 'inox', '2025-11-16 20:20:00', 'Premium', 90, '2025-11-13 19:13:30'),
+(39, 5, 'inox', '2025-11-17 14:05:00', 'Standard', 100, '2025-11-13 19:13:30'),
+(40, 5, 'inox', '2025-11-17 20:55:00', 'VIP', 60, '2025-11-13 19:13:30');
 
 -- --------------------------------------------------------
 
@@ -2978,7 +3583,10 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `full_name`, `email`, `phone`, `password_hash`, `created_at`) VALUES
-(1, 'Prashant Agrawal', 'prashantagrawal0934@gmail.com', '+6581770015', '$2y$10$54hKkoXY7tbyevZbzFQtdOP2z2c7cWHGaenyfx256Fn5jyFfQ2KeS', '2025-11-04 01:22:53');
+(3, 'Prashant Agrawal', 'prashant017@e.ntu.edu.sg', '+65 81770015', '$2y$10$y6yu9zJdSjy0OzcGObIvE.vCUKa1jEUGKAcsOl5xCXSeQMLgqm62e', '2025-11-09 04:35:27'),
+(4, 'Ram', 'prashantagrawal0934@gmail.com', '81770015', '$2y$10$ssbb58Zdi2r5jVfM3yi2eOjJhnbvydjkXj4V0qp6PLmYLL21B0.Be', '2025-11-09 21:22:06'),
+(5, 'ram', 'sdg@yahoo.om', '23534624', '$2y$10$2TQwr/ACvQ6xcREBgzdTT.4D/S4I.colBCLdK7eMdffUNTxxxQo4q', '2025-11-10 09:15:57'),
+(6, 'ramalingam', 'rama2k2@gmail.com', '86848374', '$2y$10$XAxsKWbCV/YcP/VHOGl1w..4obKOKqbfLjZ.yjUPQr8V5.5IVa.7K', '2025-11-14 03:18:51');
 
 -- --------------------------------------------------------
 
@@ -2993,6 +3601,16 @@ CREATE TABLE `venues` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
+-- Dumping data for table `venues`
+--
+
+INSERT INTO `venues` (`id`, `name`, `total_seats`) VALUES
+(1, 'Orchard Cineplex A', 100),
+(2, 'Marina Theatre Hall 2', 100),
+(3, 'Jewel Cinema 5', 100),
+(4, 'Tampines Stage 1', 100);
+
+--
 -- Indexes for dumped tables
 --
 
@@ -3001,7 +3619,8 @@ CREATE TABLE `venues` (
 --
 ALTER TABLE `bookings`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`);
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `idx_bookings_show` (`show_id`);
 
 --
 -- Indexes for table `booking_items`
@@ -3012,10 +3631,26 @@ ALTER TABLE `booking_items`
   ADD KEY `showtime_id` (`showtime_id`);
 
 --
+-- Indexes for table `booking_seats`
+--
+ALTER TABLE `booking_seats`
+  ADD PRIMARY KEY (`booking_id`,`seat_id`),
+  ADD KEY `fk_booking_seats_seat` (`seat_id`),
+  ADD KEY `idx_booking_seats_schedule` (`schedule_id`);
+
+--
 -- Indexes for table `contact_messages`
 --
 ALTER TABLE `contact_messages`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `halls`
+--
+ALTER TABLE `halls`
+  ADD PRIMARY KEY (`hall_id`),
+  ADD UNIQUE KEY `hall_code` (`hall_code`),
+  ADD KEY `fk_halls_venues` (`venue_id`);
 
 --
 -- Indexes for table `movies`
@@ -3036,6 +3671,12 @@ ALTER TABLE `preference_items`
 ALTER TABLE `schedules`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uq_schedules_show_venue_start` (`show_id`,`venue`,`start_at`);
+
+--
+-- Indexes for table `seats`
+--
+ALTER TABLE `seats`
+  ADD PRIMARY KEY (`seat_id`);
 
 --
 -- Indexes for table `shows`
@@ -3082,19 +3723,25 @@ ALTER TABLE `venues`
 -- AUTO_INCREMENT for table `bookings`
 --
 ALTER TABLE `bookings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `booking_items`
 --
 ALTER TABLE `booking_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `contact_messages`
 --
 ALTER TABLE `contact_messages`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `halls`
+--
+ALTER TABLE `halls`
+  MODIFY `hall_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `movies`
@@ -3106,13 +3753,19 @@ ALTER TABLE `movies`
 -- AUTO_INCREMENT for table `preference_items`
 --
 ALTER TABLE `preference_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=104;
 
 --
 -- AUTO_INCREMENT for table `schedules`
 --
 ALTER TABLE `schedules`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=197;
+
+--
+-- AUTO_INCREMENT for table `seats`
+--
+ALTER TABLE `seats`
+  MODIFY `seat_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=512;
 
 --
 -- AUTO_INCREMENT for table `shows`
@@ -3130,19 +3783,19 @@ ALTER TABLE `showtimes`
 -- AUTO_INCREMENT for table `show_inventory`
 --
 ALTER TABLE `show_inventory`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `venues`
 --
 ALTER TABLE `venues`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- Constraints for dumped tables
@@ -3152,7 +3805,8 @@ ALTER TABLE `venues`
 -- Constraints for table `bookings`
 --
 ALTER TABLE `bookings`
-  ADD CONSTRAINT `bookings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
+  ADD CONSTRAINT `bookings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+  ADD CONSTRAINT `fk_bookings_schedule` FOREIGN KEY (`show_id`) REFERENCES `schedules` (`id`);
 
 --
 -- Constraints for table `booking_items`
@@ -3160,6 +3814,20 @@ ALTER TABLE `bookings`
 ALTER TABLE `booking_items`
   ADD CONSTRAINT `booking_items_ibfk_1` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`),
   ADD CONSTRAINT `booking_items_ibfk_2` FOREIGN KEY (`showtime_id`) REFERENCES `showtimes` (`id`);
+
+--
+-- Constraints for table `booking_seats`
+--
+ALTER TABLE `booking_seats`
+  ADD CONSTRAINT `fk_booking_seats_booking` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_booking_seats_seat` FOREIGN KEY (`seat_id`) REFERENCES `seats` (`seat_id`),
+  ADD CONSTRAINT `fk_booking_seats_schedule` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`id`);
+
+--
+-- Constraints for table `halls`
+--
+ALTER TABLE `halls`
+  ADD CONSTRAINT `fk_halls_venues` FOREIGN KEY (`venue_id`) REFERENCES `venues` (`id`);
 
 --
 -- Constraints for table `schedules`
