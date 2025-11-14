@@ -117,13 +117,16 @@ async function renderPreferences(){
       if (x.venue) metaParts.push(x.venue);
       if (x.seat_labels) metaParts.push('Seats: ' + x.seat_labels);
       const metaHtml = metaParts.length ? `<div class="meta">${metaParts.join(' • ')}</div>` : '';
+      const qty = Number(x.tickets || x.qty || 1);
+      const unit = Number(x.price || 0);
+      const subtotal = qty * unit;
       return `
       <tr>
         <td><span class="badge">#${x.rank_pos}</span></td>
         <td>${x.title}${metaHtml}</td>
         <td>${fmtDateTimeLocal(x.start_at)}</td>
-        <td>${x.tickets || 2}</td>
-        <td>$${Number(x.price||0).toFixed(2)}</td>
+        <td>${qty}</td>
+        <td>$${subtotal.toFixed(2)}</td>
         <td class="right">
         <button class="btn move-up" onclick="PREFS.move(${x.id}, '${x.start_at}','up')">↑</button>
         <button class="btn move-down" onclick="PREFS.move(${x.id}, '${x.start_at}','down')">↓</button>
@@ -143,13 +146,16 @@ async function renderPreferences(){
     if (venueMeta) metaParts.push(venueMeta);
     if (seatMeta) metaParts.push(seatMeta);
     const metaHtml = metaParts.length ? `<div class="meta">${metaParts.join(' • ')}</div>` : '';
+    const qty = Number(x.qty || 1);
+    const unit = Number(x.price || 0);
+    const subtotal = qty * unit;
     return `
     <tr>
       <td><span class="badge">#${i+1}</span></td>
       <td>${x.show_title || ('Show #' + x.show_id)}${metaHtml}</td>
       <td>${fmtDateTimeLocal(x.start_at_iso)}</td>
-      <td>${x.qty}</td>
-      <td>$${Number(x.price||0).toFixed(2)}</td>
+      <td>${qty}</td>
+      <td>$${subtotal.toFixed(2)}</td>
       <td class="right">
         <button class="btn move-up" onclick="movePref(${x.id}, 'up')">↑</button>
         <button class="btn move-down" onclick="movePref(${x.id}, 'down')">↓</button>
@@ -501,21 +507,25 @@ window.bootConfirm = function bootConfirm(){
         </div>` : ''}
 
         <table class="table" style="margin-top:10px">
-          <thead><tr><th>Show#</th><th>When</th><th>Venue</th><th>Class</th><th>Qty</th><th>Price</th></tr></thead>
+          <thead><tr><th>Show</th><th>When</th><th>Venue</th><th>Class</th><th>Qty</th><th>Subtotal</th></tr></thead>
           <tbody>
             ${items.map(x=>{
               const venueSpan = cleanVenueMeta(x.venue_name);
               const seatClass = displayTicketClass(x.ticket_class);
               const seatText = x.seat_labels ? `Seats: ${x.seat_labels}` : seatClass;
               const whenTxt = x.start_at ? fmtDateTimeLocal(x.start_at.replace(' ','T')) : '-';
+              const qty = Number(x.qty ?? x.tickets ?? 1);
+              const unit = Number(x.unit_price || x.price || 0);
+              const lineTotal = qty * unit;
+              const showText = x.show_title || (x.show_id ? `Show #${x.show_id}` : '—');
               return `
                 <tr>
-                  <td>${x.show_id ?? '—'}</td>
+                  <td>${showText}</td>
                   <td>${whenTxt}</td>
                   <td>${venueSpan || '—'}</td>
                   <td>${seatText}</td>
-                  <td>${x.qty ?? '—'}</td>
-                  <td>$${Number(x.unit_price||x.price||0).toFixed(2)}</td>
+                  <td>${qty}</td>
+                  <td>$${lineTotal.toFixed(2)}</td>
                 </tr>
               `;
             }).join("")}

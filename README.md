@@ -1,203 +1,118 @@
-# 🎟️ TickItNow - Movie Booking System
+# 🎟️ TickItNow – Seat-first Cinema Booking
 
-A comprehensive web-based movie booking platform built with PHP, MySQL, and vanilla JavaScript. Features real-time seat inventory management, user preferences, and a complete booking workflow.
+TickItNow is a XAMPP-friendly cinema booking project for EE4727-style assignments. It runs on vanilla PHP/MySQL/JS (no frameworks, no build tools) and now includes the full seat-selection flow with double-booking protection.
 
 ![TickItNow Homepage](assets/screenshot-homepage.png)
 
-## ✨ Features
+## ✨ Highlights
 
-### 🎬 Core Functionality
-- **Movie Browsing** - Browse available movies with detailed information
-- **Show Scheduling** - View showtimes across multiple venues and dates
-- **Preference System** - Rank and manage preferred showtimes
-- **Real-time Booking** - Live seat availability with inventory management
-- **User Authentication** - Registration, login, and account management
-- **Order History** - Track previous bookings and receipts
-- **Contact System** - Customer support with ticketing
+- **Movie gallery + show pages** with real-time seat counts per venue/date.
+- **Preference cart** – users add showtimes, rank them, and proceed to seat selection.
+- **Seat picker** – 10×10 hall grid rendered by `seat_selection.php`, locked by exact seat IDs.
+- **Atomic bookings** – `api/confirm_selection.php` wraps everything in a transaction, deducts inventory, inserts rows into `booking_seats`, and emails a receipt.
+- **Account tools** – login/register, order history, change-password flow, contact form.
+- **No external tooling** – everything works by dropping the repo into `htdocs` and importing SQL.
 
-### 🚀 Technical Features
-- **Real-time Inventory** - Concurrent booking protection with database locking
-- **Session Management** - Secure user sessions and preference tracking
-- **Email Notifications** - Booking confirmations via PHPMailer + Mailpit
-- **Responsive Design** - Mobile-friendly interface with CSS Grid
-- **Form Validation** - Client and server-side validation
-- **Transaction Safety** - ACID compliance for booking operations
+## 🛠️ Stack
 
-## 🛠️ Technology Stack
+| Layer      | Details |
+|------------|---------|
+| Backend    | PHP 8.x (procedural), mysqli + PDO, PHPMailer + Mailpit (optional) |
+| Frontend   | HTML5, CSS3 (custom), vanilla JavaScript (`assets/app.js`) |
+| Database   | MySQL / MariaDB (`TickItNow` schema) with transactions + FK constraints |
+| Server     | Apache via XAMPP on localhost (default ports 80/3306 or 8000/3307) |
 
-### Backend
-- **PHP 8.1+** - Server-side logic and API endpoints
-- **MySQL/MariaDB** - Database with transaction support
-- **PHPMailer 7.0** - Email notifications
-- **Apache/XAMPP** - Web server environment
-
-### Frontend
-- **HTML5** - Semantic markup and structure
-- **CSS3** - Custom styling with CSS Grid and Flexbox
-- **Vanilla JavaScript** - Interactive UI without frameworks
-- **Tailwind CSS** - Utility-first CSS framework (development)
-
-### Database Design
-- **8 Active Tables** - Normalized schema with foreign key constraints
-- **Real-time Inventory** - `show_inventory` table with availability tracking
-- **User Preferences** - Session-based preference ranking system
-- **Audit Trail** - Booking history and timestamps
-
-## 🏗️ Project Structure
+## 📁 Project Layout (trimmed)
 
 ```
 TickItNow/
-├── 📁 api/                     # Backend API endpoints
-│   ├── add_preference.php      # Add showtime to preferences
-│   ├── confirm_selection.php   # Complete booking transaction
-│   ├── get_schedule.php        # Fetch movie showtimes
-│   ├── list_available.php      # Check seat availability
-│   ├── login.php              # User authentication
-│   ├── order_history.php      # Booking history
-│   └── ...                    # Additional API endpoints
-├── 📁 assets/                  # Frontend assets
-│   ├── app.js                 # Main JavaScript (669 lines)
-│   ├── styles.css             # Custom CSS (358 lines)
-│   └── posters/               # Movie poster images
-├── 📁 database/               # Database files
-│   ├── TickItNow-2.sql       # Latest database dump
-│   └── schema.sql            # Database schema
-├── 📄 index.html              # Homepage
-├── 📄 shows.html              # Movie gallery
-├── 📄 preferences.html        # User preferences
-├── 📄 available.html          # Booking confirmation
-├── 📄 account.html            # User dashboard
-├── 📄 db.php                  # Database configuration
-└── 📄 composer.json           # PHP dependencies
+├── api/
+│   ├── add_preference.php      # Save show to cart (with seat IDs / labels)
+│   ├── confirm_selection.php   # Final booking + transactional seat lock
+│   ├── get_schedule.php        # Show_inventory windowed fetch
+│   ├── list_available.php      # Review cart table
+│   ├── list_preferences.php    # Preference ranking
+│   ├── order_history.php       # Account page history feed
+│   └── ...                     # login, register, contact, etc.
+├── assets/
+│   ├── app.js                  # UI logic (shows, cart, confirmation, account)
+│   └── site.css                # Base styling
+├── database/
+│   ├── TickItNow.sql           # Primary dump
+│   ├── migrations/
+│   │   ├── 20250210_add_seats.sql
+│   │   └── 20250215_add_schedule_refs.sql
+│   └── README-db.md            # (create if you need notes)
+├── seat_selection.php          # PHP seat grid + preference POST
+├── confirm_booking.php         # Legacy direct booking (optional)
+├── *.html                      # index, shows, available, preferences, account, etc.
+└── db.php                      # PDO config (points to TickItNow)
 ```
 
-## 🚀 Quick Start
+## 🚀 Setup in 5 Minutes
 
-### Prerequisites
-- **XAMPP** or similar (Apache + MySQL)
-- **PHP 8.1+**
-- **Composer** (for PHPMailer)
-- **Modern web browser**
-
-### Installation
-
-1. **Clone the repository**
+1. **Clone / copy into XAMPP htdocs**
    ```bash
    git clone https://github.com/prashantagrawal09/TickItNow.git
-   cd TickItNow
+   mv TickItNow /Applications/XAMPP/xamppfiles/htdocs/
    ```
 
-2. **Install PHP dependencies**
-   ```bash
-   composer install
+2. **Create DB + import base dump**
+   - Open phpMyAdmin → “New” → name it `TickItNow`.
+   - Import `database/TickItNow.sql`.
+
+3. **Run the two migrations (phpMyAdmin SQL tab)**
+   - `database/migrations/20250210_add_seats.sql`
+   - `database/migrations/20250215_add_schedule_refs.sql`
+   > If columns already exist, comment out the duplicate `ALTER` lines (see file comments).
+
+4. **(Optional) seed demo inventory**
+   ```sql
+   INSERT INTO show_inventory (show_id, venue_id, start_at, ticket_class, available_qty) VALUES
+   (2,'pvr1','2025-11-14 14:00:00','Standard',110),
+   (2,'pvr1','2025-11-14 20:00:00','VIP',55),
+   (2,'pvr1','2025-11-15 15:10:00','Premium',85),
+   (2,'pvr1','2025-11-15 21:30:00','VIP',55);
    ```
 
-3. **Start XAMPP services**
-   - Start Apache (port 8000)
-   - Start MySQL (port 3307)
+5. **Start Apache + MySQL**, browse to `http://localhost/TickItNow/`
 
-4. **Import database**
-   - Open phpMyAdmin: `http://localhost:8000/phpmyadmin`
-   - Create database: `TickItNow`
-   - Import: `TickItNow-2.sql`
+## 🔄 Seat Selection Flow
 
-5. **Configure database connection**
-   ```php
-   // db.php
-   $dsn = "mysql:host=localhost;port=3307;dbname=TickItNow;charset=utf8mb4";
-   ```
+1. User clicks “Select seats” on a showtime → `seat_selection.php?show_id=123&qty=2`.
+2. PHP renders the hall (10 rows × 10 seats) using `seats` + `booking_seats` to mark sold seats.
+3. On submit, JS sends `seat_ids` + `seat_labels` + `schedule_id` to `api/add_preference.php`.
+4. `available.html` pulls `api/list_available.php` to review cart → `api/confirm_selection.php`.
+5. Confirm API re-checks seats, inserts rows into `booking_seats`, nukes preferences, and returns JSON for `confirmation.html`.
 
-6. **Access the application**
-   ```
-   http://localhost:8000/TickItNow
-   ```
+## 📊 Schema Notes
 
-## 📊 Database Schema
+- `seats` – master grid per hall.
+- `preference_items` – now has `schedule_id`, `seat_ids`, `seat_labels`.
+- `booking_seats` – `(booking_id, seat_id, schedule_id)` ensures every seat belongs to a specific showtime.
+- `show_inventory` – aggregated availability for non-seat classes (Standard/Premium/VIP counts).
 
-### Core Tables
-| Table | Purpose | Records |
-|-------|---------|---------|
-| `users` | User registration & authentication | 2+ |
-| `shows` | Movie catalog with details | 10 |
-| `show_inventory` | Real-time seat availability | 2,600+ |
-| `preference_items` | User showtime preferences | Variable |
-| `bookings` | Booking records | 4+ |
-| `booking_items` | Booking line items | 5+ |
-| `contact_messages` | Support tickets | Variable |
-| `schedules` | Schedule templates (for seeding) | 35 |
+## 🔧 Key Endpoints
 
-### Key Relationships
-```sql
-users (1) ──→ (∞) bookings
-bookings (1) ──→ (∞) booking_items  
-shows (1) ──→ (∞) show_inventory
-preference_items ──→ show_inventory (availability check)
-```
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/get_schedule.php?show_id=2&start_days=0&end_days=4` | Windowed fetch from `show_inventory` + hall metadata |
+| `POST /api/add_preference.php` | Adds/updates a preference row (with seats) |
+| `GET /api/list_preferences.php` | Preference ranking table |
+| `GET /api/list_available.php` | Cart / review page data |
+| `POST /api/confirm_selection.php` | Finalizes booking, writes `booking_seats`, emails buyer |
+| `GET /api/order_history.php` | Account page order list |
 
-## 🔧 API Endpoints
+> All APIs use prepared statements with mysqli/PDO and never require npm/composer.
 
-### Authentication
-- `POST /api/register.php` - User registration
-- `POST /api/login.php` - User login
-- `GET /api/logout.php` - User logout
-- `GET /api/me.php` - Current user profile
+## ⚠️ Dev Tips
 
-### Movies & Scheduling
-- `GET /api/get_show.php?id={id}` - Movie details
-- `GET /api/get_schedule.php?show_id={id}` - Show schedules
-- `GET /api/list_showtimes.php?show_id={id}&date={date}` - Available showtimes
+- **No Node/Composer** – delete `node_modules`, `package.json`, `composer.json`, `vendor/` if they sneak back in.
+- **DB name is `TickItNow`** – `db.php` + `seat_selection.php` + `confirm_booking.php` already point there.
+- **Seat data required** – if `preference_items.schedule_id = 0` you must rerun the backfill query or delete those rows before booking.
+- **Sharing locally** – run `ngrok http 80` or expose Apache on your LAN (`ipconfig` shows your 10.x.x.x address).
 
-### Preferences
-- `POST /api/add_preference.php` - Add to preferences
-- `GET /api/list_preferences.php` - List user preferences
-- `POST /api/move_preference.php` - Reorder preferences
-- `DELETE /api/remove_preference.php` - Remove preference
-
-### Booking
-- `GET /api/list_available.php` - Check availability
-- `POST /api/confirm_selection.php` - Complete booking
-- `GET /api/order_history.php` - Booking history
-
-## 🎯 Usage Examples
-
-### Adding a Preference
-```javascript
-const payload = {
-  show_id: 1,
-  venue_id: "inox",
-  venue_name: "Orchard Cineplex A",
-  start_at: "2025-11-10 19:00:00",
-  ticket_class: "Premium",
-  qty: 2,
-  price: 15.50
-};
-
-fetch('api/add_preference.php', {
-  method: 'POST',
-  headers: {'Content-Type': 'application/json'},
-  body: JSON.stringify(payload)
-});
-```
-
-### Completing a Booking
-```javascript
-const booking = {
-  select_item_ids: [1, 2, 3],
-  buyer_name: "John Doe",
-  buyer_email: "john@example.com",
-  buyer_phone: "81234567"
-};
-
-fetch('api/confirm_selection.php', {
-  method: 'POST',
-  headers: {'Content-Type': 'application/json'},
-  body: JSON.stringify(booking)
-});
-```
-
-## 🔒 Security Features
-
-- **SQL Injection Protection** - Prepared statements throughout
+Enjoy building on top of TickItNow! PRs that keep the no-framework rule are welcome. 😉
 - **Session Management** - Secure session handling
 - **Input Validation** - Client and server-side validation
 - **Transaction Locking** - Race condition prevention

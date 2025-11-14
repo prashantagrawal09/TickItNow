@@ -154,8 +154,9 @@ try {
   $params = $ids; array_unshift($params, $session_id);
 
   $stmt = $pdo->prepare("
-    SELECT p.*
+    SELECT p.*, s.title AS show_title
     FROM preference_items p
+    LEFT JOIN shows s ON s.id = p.show_id
     WHERE p.session_id=? AND p.id IN ($in)
     ORDER BY COALESCE(p.rank, 999999), p.created_at ASC, p.id ASC
     FOR UPDATE
@@ -280,6 +281,7 @@ sendBookingEmail(
   array_map(function($p){
     return [
       "show_id"      => (int)$p['show_id'],
+      "show_title"   => $p['show_title'] ?? null,
       "schedule_id"  => isset($p['schedule_id']) ? (int)$p['schedule_id'] : 0,
       "venue_name"   => $p['venue_name'],
       "start_at"     => $p['start_at'],
@@ -309,6 +311,7 @@ sendBookingEmail(
       return [
         "pref_id"      => (int)$p['id'],
         "show_id"      => (int)$p['show_id'],
+        "show_title"   => $p['show_title'] ?? null,
         "schedule_id"  => isset($p['schedule_id']) ? (int)$p['schedule_id'] : 0,
         "venue_id"     => $p['venue_id'],
         "venue_name"   => $p['venue_name'],
